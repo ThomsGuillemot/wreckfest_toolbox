@@ -21,3 +21,6 @@ An easy to use tool, where you just have to set the custom data to True, False, 
 ### Wreckfest Exporter
 Export your scene into a .bgo3 file. First, select Set Path & Export, select your file in the export window, when you valid, the addon store the path into your .scene file. And then, you just have to use direct export to export the scene into the previously set path. You can change the path at any moment by using Set Path & Export again.
 **Where to Find:** show your side menu (Shortcut : N) and go into Wreckfest Panel. Into the Export SubMenu
+
+## How to install
+Download the master branch as a .zip file. Then into blender go into Edit -> Preferences -> Add-ons, then press Install... and select the archive. Don't forget to enable the add-on
