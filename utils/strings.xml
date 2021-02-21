@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<root>
+    <infos>
+        <wreckfest_path>Set the path to the Wreckfest Game folder. You can use Steam->Local files to find it more easilly</wreckfest_path>
+    </infos>
+</root>
