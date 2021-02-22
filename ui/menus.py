@@ -46,8 +46,6 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
                 row.operator("wftb.export_bgo", text="Direct Export", icon="EXPORT")
             row.operator("wftb.export_bgo_with_dialog", text="Set Path & Export", icon="FILEBROWSER")
             row.scale_y = 2
-            row = box.row(align=True)
-            row.operator(bpy.ops.wm, "console_toggle")
 
         elif props.panel_enums == "SETTINGS":
             row.label(text="Addon Settings")
