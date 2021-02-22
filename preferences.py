@@ -1,6 +1,7 @@
 """Addon preferences that are saved inbetween sesions."""
 
-import bpy
+import bpy, os.path
+from os import path
 
 
 def preference_save(self, context):
@@ -16,7 +17,6 @@ class WreckfestPanelContext(bpy.types.PropertyGroup):
         name="Addon Panels",
     )
 
-
 class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
     bl_idname = "wreckfest_toolbox"
 
@@ -25,6 +25,8 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         ("WARNING", "Warning", "", "", 2),
         ("ERROR", "Error", "", "", 3)
     ]
+
+    physical_materials = [("default", "default", "", "", 1)]
 
     # Wreckfest path
     wf_path: bpy.props.StringProperty(
@@ -41,9 +43,17 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         default=R"\tools\build_asset.bat"
     )
 
+    wf_physical_material_list: bpy.props.EnumProperty(
+        name="Wreckfest Physical Material List",
+        items=physical_materials
+    )
+    # update=bpy.ops.wftb.set_physical_material()
+
+
+
     export_message_level: bpy.props.EnumProperty(
         name="Export Message Level",
-        items=wreckfest_message_level
+        items=wreckfest_message_level,
     )
 
     apply_modifiers: bpy.props.BoolProperty(
@@ -58,6 +68,26 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         description="Add a Split edge modifier for sharp edges (marked) on export"
     )
 
+    def generate_physical_material_list(self):
+        if self.wf_path is None:
+            return [("default", "Default", "", "", 0)]
 
+        directory = self.wf_path + "\data\scene\surface\\"
 
+        # Check if the default physical material exist
+        if not path.exists(directory + "default.suse"):
+            return [("default", "Default", "", "", 0)]
+
+        material_list = []
+
+        # Get all the .SUSE files in the Wreckfest\data\scene\surface folder and generate a list of string from that
+        counter = 0
+        for filename in os.listdir(directory):
+            if filename.endswith(".suse"):
+                # add the file to the material list
+                material_name = os.path.splitext(os.path.basename(filename))[0]
+                material_list.append((material_name, material_name, "", "", counter))
+                counter += 1
+
+        return material_list
 
