@@ -32,6 +32,7 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             row.label(text="Export :", icon="EXPORT")
             row = box.row(align=True)
             row.prop(prefs, "apply_modifiers")
+            row.prop(prefs, "build_after_export")
             # TODO : Implement this
             # row.prop(prefs, "auto_split_edge")
             row = box.row(align=True)
@@ -44,7 +45,9 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             if context.scene.get("wftb_bgo_export_path"):
                 row.operator("wftb.export_bgo", text="Direct Export", icon="EXPORT")
             row.operator("wftb.export_bgo_with_dialog", text="Set Path & Export", icon="FILEBROWSER")
-            row.scale_y = 1.5
+            row.scale_y = 2
+            row = box.row(align=True)
+            row.operator(bpy.ops.wm, "console_toggle")
 
         elif props.panel_enums == "SETTINGS":
             row.label(text="Addon Settings")

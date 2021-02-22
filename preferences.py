@@ -67,7 +67,6 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
     # Build assets tool path
     wf_build_asset_subpath: bpy.props.StringProperty(
         name="Wreckfest Build Asset Path",
-        subtype='FILE_PATH',
         default=R"\tools\build_asset.bat"
     )
 
@@ -94,6 +93,13 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         name="Split Edges",
         default=True,
         description="Add a Split edge modifier for sharp edges (marked) on export"
+    )
+
+    build_after_export: bpy.props.BoolProperty(
+        name="Build after export",
+        description="Launch the Build Asset Script in background "
+                    "for the newly exported .bgo3 file once the export is done",
+        default=True
     )
 
 

@@ -8,11 +8,16 @@
 #
 # ##### END MIT LICENSE BLOCK #####
 
-import os, time, struct, bpy, bmesh, mathutils, bpy_extras
+import os
+import time
+import struct
+import bpy
+import bmesh
+import mathutils
+import subprocess
+import threading
 from bpy_extras.io_utils import ExportHelper
-from mathutils import *
-import os.path as path
-from math import radians
+from wreckfest_toolbox import popen_and_call
 
 from .material_node import WreckfestWrapperNode
 from .. import preferences
@@ -104,6 +109,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
         # Get if the scene have a custom property referencing the export path
         self.export_path = bpy.context.scene.get('wftb_bgo_export_path')
+        self.output = None
+        self.errors = None
 
     def execute(self, context):
         """The exporter will export every objects,
@@ -129,6 +136,10 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         self.show_message('export done in %.4f sec.' % (time.clock() - time1))
         print("----------------------------------------")
+
+        if self.prefs.get("build_after_export"):
+            self.build_and_notify()
+
         return {'FINISHED'}
 
     def show_message(self, message="", message_type='INFO'):
@@ -522,4 +533,13 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             objects_id_current += 1
             self.write_filelen(object_offset, file, -8)
 
+    def build_and_notify(self):
+        build_asset_file = self.prefs.get("wf_path") + R"\tools\build_asset.bat"
+        popen_args = [build_asset_file, self.export_path]
+        if os.path.exists(build_asset_file):
+            print("Building asset ...")
+            thread = popen_and_call(self.notify, popen_args)
+
+    def notify(self):
+        self.show_message("... Building Done")
 
