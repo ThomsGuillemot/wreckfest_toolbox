@@ -7,9 +7,10 @@ bl_info = {
     "location": "Tool Bar",
     "description": "A toolbox that help creating mods for the game Wreckfest",
     "warning": "Actually in development",
-    "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.8/Py/",
+    "wiki_url": "https://github.com/ThomsGuillemot/wreckfest-toolbox/wiki",
     "support": 'COMMUNITY',
-    "category": "3D View"}
+    "category": "3D View"
+}
 
 
 def reload_modules(name):
