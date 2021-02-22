@@ -21,12 +21,40 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
     bl_idname = "wreckfest_toolbox"
 
     wreckfest_message_level = [
-        ("VERBOSE", "Verbose", "", "", 1),
-        ("WARNING", "Warning", "", "", 2),
-        ("ERROR", "Error", "", "", 3)
+        ("VERBOSE", "Verbose", ""),
+        ("WARNING", "Warning", ""),
+        ("ERROR", "Error", "")
     ]
 
-    physical_materials = [("default", "default", "", "", 1)]
+    physical_materials = [("default", "default", "")]
+
+    def get_physical_materials(self, context):
+        if len(self.physical_materials) > 1:
+            return self.physical_materials
+
+        self.physical_materials.clear()
+        if self.wf_path is None:
+            self.physical_materials.append(("default", "default", ""))
+            return self.physical_materials
+
+        directory = self.wf_path + "\data\scene\surface\\"
+
+        # Check if the default physical material exist
+        if not path.exists(directory + "default.suse"):
+            self.physical_materials.append(("default", "default", ""))
+            return self.physical_materials
+
+        # Get all the .SUSE files in the Wreckfest\data\scene\surface folder and generate a list of string from that
+        counter = 0
+        for filename in os.listdir(directory):
+            if filename.endswith(".suse"):
+                # add the file to the material list
+                material_name = os.path.splitext(os.path.basename(filename))[0]
+                material = (material_name, material_name, material_name)
+                self.physical_materials.append(material)
+                counter += 1
+
+        return self.physical_materials
 
     # Wreckfest path
     wf_path: bpy.props.StringProperty(
@@ -45,11 +73,11 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
 
     wf_physical_material_list: bpy.props.EnumProperty(
         name="Wreckfest Physical Material List",
-        items=physical_materials
+        items=get_physical_materials,
+        default=None
     )
+    # TODO : Make this update function work
     # update=bpy.ops.wftb.set_physical_material()
-
-
 
     export_message_level: bpy.props.EnumProperty(
         name="Export Message Level",
@@ -68,26 +96,5 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         description="Add a Split edge modifier for sharp edges (marked) on export"
     )
 
-    def generate_physical_material_list(self):
-        if self.wf_path is None:
-            return [("default", "Default", "", "", 0)]
 
-        directory = self.wf_path + "\data\scene\surface\\"
-
-        # Check if the default physical material exist
-        if not path.exists(directory + "default.suse"):
-            return [("default", "Default", "", "", 0)]
-
-        material_list = []
-
-        # Get all the .SUSE files in the Wreckfest\data\scene\surface folder and generate a list of string from that
-        counter = 0
-        for filename in os.listdir(directory):
-            if filename.endswith(".suse"):
-                # add the file to the material list
-                material_name = os.path.splitext(os.path.basename(filename))[0]
-                material_list.append((material_name, material_name, "", "", counter))
-                counter += 1
-
-        return material_list
 

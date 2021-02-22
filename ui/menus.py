@@ -69,9 +69,9 @@ class WFTB_PT_wreckfest_material_panel(bpy.types.Panel):
     def draw(self, context):
         prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
         row = self.layout.row(align=True)
-        row.label(text="Physical Material")
-        row.prop(prefs, "wf_physical_material_list")
-        row.operator("wftb.set_physical_material")
+        row.prop(prefs, "wf_physical_material_list", text="Physical Material")
+        row = self.layout.row(align=True)
+        row.operator("wftb.set_physical_material", text="Apply", icon='CHECKMARK')
 
 class WFTB_MT_object_context_menu(bpy.types.Menu):
     """Add a wreckfest menu to the Right Click"""

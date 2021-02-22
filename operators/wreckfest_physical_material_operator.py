@@ -14,15 +14,17 @@ class WFTB_OT_set_physical_material(bpy.types.Operator):
 
     def execute(self, context):
         prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
+        # prefs.refresh_physical_material_list()
+        if prefs.get("wf_physical_material_list") is None:
+            return {'CANCELLED'}
 
-        material_name = "Test#car"
-        # bpy.context.active_object.active_material.name
-        name_index = material_name.index('#')
+        material_name = bpy.context.active_object.active_material.name
+        name_index = material_name.find('#')
         if name_index != -1:
             material_name = material_name[:name_index]
 
-        # TODO : Add the physical material suffix
-
+        material_name += "#"
+        material_name += prefs.physical_materials[prefs.get("wf_physical_material_list")][0]
         # Change the name of the material again
         bpy.context.active_object.active_material.name = material_name
 
