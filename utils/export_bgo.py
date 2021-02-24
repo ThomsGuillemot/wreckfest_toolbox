@@ -95,6 +95,7 @@ class WFTB_OP_export_bgo_with_dialog(bpy.types.Operator, ExportHelper):
 
         return {'FINISHED'}
 
+
 class WFTB_OP_export_bgo(bpy.types.Operator):
     """Export the visible scene to a BGO File"""
     bl_idname = "wftb.export_bgo"
@@ -207,7 +208,6 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             coffset += 1
 
         return -1
-
 
     @staticmethod
     def get_exportables():
@@ -413,7 +413,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             mat_index = 0
             try:
                 mat_index = float(self.get_material_offset(ob.data.materials[tri[0].face.material_index]))
-            except:
+            except Exception:
                 mat_index = 0
 
             for loop in tri[::-1]:
@@ -455,7 +455,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         name = name.replace(".scne", "#xref")
         return name
 
-    def get_custom_data(self, obj):
+    @staticmethod
+    def get_custom_data(obj):
         custom_data = ""
         if 'CustomData' in obj:
             custom_data = obj['CustomData']

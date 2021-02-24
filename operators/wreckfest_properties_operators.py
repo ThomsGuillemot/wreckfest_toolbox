@@ -49,7 +49,7 @@ class WFTB_OT_toggle_wreckfest_custom_data(bpy.types.Operator):
     bl_label = "Manage Custom Data"
     bl_options = {'REGISTER', 'UNDO'}
 
-    wf_props: bpy.props.PointerProperty(type=WreckfestCarPropertyGroup)
+    wf_props: bpy.props.PointerProperty(type=WreckfestCarPropertyGroup, options={'SKIP_SAVE'})
     show_more: bpy.props.BoolProperty(name="Show More Properties", default=False)
 
     def draw(self, context):
@@ -90,7 +90,7 @@ class WFTB_OT_toggle_wreckfest_custom_data(bpy.types.Operator):
         return False
 
     def invoke(self, context, event):
-        self.reset_properties()
+        # self.reset_properties()
         return {'FINISHED'}
 
     def execute(self, context):

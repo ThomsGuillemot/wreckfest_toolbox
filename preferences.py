@@ -9,6 +9,7 @@ from os import path
 def preference_save(self, context):
     bpy.ops.wm.save_userpref()
 
+
 class WreckfestPanelContext(bpy.types.PropertyGroup):
     """Properties that can be changed in panel"""
     panel_enums: bpy.props.EnumProperty(
@@ -18,6 +19,7 @@ class WreckfestPanelContext(bpy.types.PropertyGroup):
         ),
         name="Addon Panels",
     )
+
 
 class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
     bl_idname = "wreckfest_toolbox"
@@ -108,7 +110,8 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         row = self.layout.row(align=True)
         row.prop(self, "wf_path")
 
-    def popen_and_call(self, on_exit, popen_args):
+    @staticmethod
+    def popen_and_call( on_exit, popen_args):
         """
         Runs the given args in a subprocess.Popen, and then calls the function
         on_exit when the subprocess completes.
@@ -126,8 +129,3 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         thread.start()
         # returns immediately after the thread starts
         return thread
-
-
-
-
-
