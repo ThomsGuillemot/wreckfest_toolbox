@@ -104,6 +104,10 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         default=True
     )
 
+    def draw(self, context):
+        row = self.layout.row(align=True)
+        row.prop(self, "wf_path")
+
     def popen_and_call(self, on_exit, popen_args):
         """
         Runs the given args in a subprocess.Popen, and then calls the function
