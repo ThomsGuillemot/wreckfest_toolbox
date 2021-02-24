@@ -12,7 +12,6 @@ bl_info = {
     "category": "3D View"
 }
 
-
 def reload_modules(name):
     import importlib
 
@@ -69,6 +68,9 @@ def popen_and_call(on_exit, popen_args):
     thread.start()
     # returns immediately after the thread starts
     return thread
+
+
+classes = []
 
 
 def register():

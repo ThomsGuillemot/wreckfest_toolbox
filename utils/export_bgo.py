@@ -103,10 +103,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     bl_description = "Export all the objects in the file excepted the ones placed in a collection with #exclude suffix"
     bl_options = {'BLOCKING'}
 
-    prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
+    prefs = None
 
     def __init__(self):
-        self.prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
         # Get if the scene have a custom property referencing the export path
         self.export_path = bpy.context.scene.get('wftb_bgo_export_path')
         self.output = None
@@ -115,6 +114,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     def execute(self, context):
         """The exporter will export every objects,
          as long as they are not part of any collection that have the suffix #exclude"""
+        self.prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
+
         if not self.export_path:
             return {'CANCELLED'}
 
@@ -125,18 +126,22 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
 
         time1 = time.clock()
-
+        wm = bpy.context.window_manager
+        total = 100
+        wm.progress_begin(0, total)
         with open(self.export_path, 'wb') as file:
             file.write(struct.pack('I', 0))
             file.write(bytes('MAIN', 'utf-8'))
+            print("Write Info ...")
             self.write_info(file)
+            print("Write Materials ...")
             self.write_materials(file)
+            print("Write Objects ...")
             self.write_objects(file)
             self.write_filelen(0, file)
 
         self.show_message('export done in %.4f sec.' % (time.clock() - time1))
         print("----------------------------------------")
-
         if self.prefs.get("build_after_export"):
             self.build_and_notify()
 
@@ -473,7 +478,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         objects_id_current = 1
         objects_id_mesh = -1
         for obj in exportables:
-            print('writing object ' + obj.name)
+            # print('writing object ' + obj.name)
             object_type = ''
             is_xref_subscene = obj.name.strip().startswith("#xref")
             # Set the type of object
@@ -501,7 +506,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             if pivot is not None:  # If special pivot constraint used?
                 self.flip_axes(obj)  # slow
                 self.write_matrix(obj.matrix_local, file)
-                print('using pivot matrix from ' + pivot.target.name + ' for ' + obj.name)
+                # print('using pivot matrix from ' + pivot.target.name + ' for ' + obj.name)
                 self.flip_axes(pivot.target)
                 self.write_matrix(pivot.target.matrix_local, file, obj.location)
                 self.flip_axes(pivot.target)
@@ -541,5 +546,5 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             thread = popen_and_call(self.notify, popen_args)
 
     def notify(self):
-        self.show_message("... Building Done")
+        print("... Building Done")
 
