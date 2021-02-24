@@ -12,7 +12,6 @@ bl_info = {
     "category": "3D View"
 }
 
-
 def reload_modules(name):
     import importlib
 
@@ -48,6 +47,12 @@ from . import registration
 from . import preferences
 from nodeitems_utils import NodeItem, register_node_categories, unregister_node_categories
 from nodeitems_builtins import ShaderNodeCategory
+import threading
+import subprocess
+
+
+classes = []
+
 
 def register():
     global classes
