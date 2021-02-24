@@ -17,7 +17,6 @@ import mathutils
 import subprocess
 import threading
 from bpy_extras.io_utils import ExportHelper
-from wreckfest_toolbox import popen_and_call
 
 from .material_node import WreckfestWrapperNode
 from .. import preferences
@@ -543,7 +542,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         popen_args = [build_asset_file, self.export_path]
         if os.path.exists(build_asset_file):
             print("Building asset ...")
-            thread = popen_and_call(self.notify, popen_args)
+            thread = self.prefs.popen_and_call(self.notify, popen_args)
 
     def notify(self):
         print("... Building Done")
