@@ -11,7 +11,7 @@ By bundling easy to use tools in a nice UI, and give hints on how to create mods
 [See the Wiki](https://github.com/ThomsGuillemot/wreckfest-toolbox/wiki)
 
 ## How to install
-Download the master branch as a .zip file. Then into blender go into Edit -> Preferences -> Add-ons, then press Install... and select the archive. Don't forget to enable the add-on
+Download the release you want from the **[release page](https://github.com/ThomsGuillemot/wreckfest-toolbox/releases)**. Then into blender go into Edit -> Preferences -> Add-ons, then press Install... and select the archive. Don't forget to enable the add-on.
 
 ## Usefull links
 [Addon Roadmap](https://trello.com/b/ttLmiQLY)   
