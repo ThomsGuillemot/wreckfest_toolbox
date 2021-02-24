@@ -1,6 +1,8 @@
 """Addon preferences that are saved inbetween sesions."""
 
 import bpy, os.path
+import subprocess
+import threading
 from os import path
 
 
@@ -67,7 +69,6 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
     # Build assets tool path
     wf_build_asset_subpath: bpy.props.StringProperty(
         name="Wreckfest Build Asset Path",
-        subtype='FILE_PATH',
         default=R"\tools\build_asset.bat"
     )
 
@@ -95,6 +96,38 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         default=True,
         description="Add a Split edge modifier for sharp edges (marked) on export"
     )
+
+    build_after_export: bpy.props.BoolProperty(
+        name="Build after export",
+        description="Launch the Build Asset Script in background "
+                    "for the newly exported .bgo3 file once the export is done",
+        default=True
+    )
+
+    def draw(self, context):
+        row = self.layout.row(align=True)
+        row.prop(self, "wf_path")
+
+    def popen_and_call(self, on_exit, popen_args):
+        """
+        Runs the given args in a subprocess.Popen, and then calls the function
+        on_exit when the subprocess completes.
+        on_exit is a callable object, and popen_args is a list/tuple of args that
+        would give to subprocess.Popen.
+        """
+
+        def run_in_thread(on_exit_event, popen_args_list):
+            proc = subprocess.Popen(popen_args_list, shell=True)
+            proc.wait()
+            on_exit_event()
+            return
+
+        thread = threading.Thread(target=run_in_thread, args=(on_exit, popen_args))
+        thread.start()
+        # returns immediately after the thread starts
+        return thread
+
+
 
 
 
