@@ -1,9 +1,11 @@
 """Addon preferences that are saved inbetween sesions."""
 
-import bpy, os.path
+import bpy
+import os.path
 import subprocess
 import threading
 from os import path
+from .operators import custom_part_management as cpm
 
 
 def preference_save(self, context):
@@ -14,8 +16,9 @@ class WreckfestPanelContext(bpy.types.PropertyGroup):
     """Properties that can be changed in panel"""
     panel_enums: bpy.props.EnumProperty(
         items=(
-            ("EXPORT", "Export", "Export", "EXPORT", 0),
-            ("SETTINGS", "Addon Settings", "Addon Settings", "PREFERENCES", 1),
+            ("CUSTOM_PARTS", "Custom Parts", "Manage custom parts", "PRESET", 0),
+            ("EXPORT", "Export", "Export scene tools", "EXPORT", 1),
+            ("SETTINGS", "Addon Settings", "Addon Settings", "PREFERENCES", 3),
         ),
         name="Addon Panels",
     )
@@ -41,7 +44,7 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
             self.physical_materials.append(("default", "default", ""))
             return self.physical_materials
 
-        directory = self.wf_path + "\data\scene\surface\\"
+        directory = self.wf_path + "\\data\\scene\\surface\\"
 
         # Check if the default physical material exist
         if not path.exists(directory + "default.suse"):
@@ -106,12 +109,14 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         default=True
     )
 
+    custom_part_manager = cpm.CustomPartManager()
+
     def draw(self, context):
         row = self.layout.row(align=True)
         row.prop(self, "wf_path")
 
     @staticmethod
-    def popen_and_call( on_exit, popen_args):
+    def popen_and_call(on_exit, popen_args):
         """
         Runs the given args in a subprocess.Popen, and then calls the function
         on_exit when the subprocess completes.
