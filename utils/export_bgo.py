@@ -14,12 +14,8 @@ import struct
 import bpy
 import bmesh
 import mathutils
-import subprocess
-import threading
 from bpy_extras.io_utils import ExportHelper
 
-from .material_node import WreckfestWrapperNode
-from .. import preferences
 
 wf_custom_data = {
     "IsCollisionModel",
@@ -88,8 +84,7 @@ class WFTB_OP_export_bgo_with_dialog(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
-        if not bpy.context.scene.get('wftb_bgo_export_path'):
-            context.scene["wftb_bgo_export_path"] = self.filepath
+        context.scene["wftb_bgo_export_path"] = self.filepath
 
         bpy.ops.wftb.export_bgo()
 

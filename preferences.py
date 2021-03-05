@@ -1,11 +1,9 @@
 """Addon preferences that are saved inbetween sesions."""
-
 import bpy
 import os.path
 import subprocess
 import threading
 from os import path
-from .operators import custom_part_management as cpm
 
 
 def preference_save(self, context):
@@ -108,8 +106,6 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
                     "for the newly exported .bgo3 file once the export is done",
         default=True
     )
-
-    custom_part_manager = cpm.CustomPartManager()
 
     def draw(self, context):
         row = self.layout.row(align=True)

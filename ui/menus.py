@@ -1,6 +1,5 @@
 import bpy
-import pprint
-
+from wreckfest_toolbox.utils.wreckfest_custom_parts_properties import CustomPartsProperties
 
 # Create a Wreckfest menu on the right panel of 3D view
 class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
@@ -31,21 +30,12 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             box = layout.box()
             row = box.row(align=True)
 
-            row.operator("wftb.refresh_custom_part_manager", icon="FILE_REFRESH")
-            # Display the custom parts by getting object name and check if #part is in the name
-            for custom_part, custom_parts in prefs.custom_part_manager.custom_parts.items():
-                partbox = box.box()
-                col = partbox.column()
-                row = col.row(align=True)
-                row.label(text=custom_part)
-                props = row.operator("wftb.switch_custom_part", text="Empty")
-                props.custom_part_name = custom_part
-                for obj in custom_parts:
-                    row = col.row(align=True)
-                    row.alignment = 'RIGHT'
-                    row.operator_context = 'EXEC_DEFAULT'
-                    props = row.operator("wftb.switch_custom_part", text=obj.name)
-                    props.custom_part_name = obj.name
+            row.operator("wftb.use_custom_parts", icon="FILE_REFRESH")
+            if CustomPartsProperties.is_custom_parts_properties_valid(context):
+                row.operator("wftb.refresh_custom_part_manager", icon="FILE_REFRESH")
+                row = box.row(align=True)
+                row.prop(context.scene.wftb_custom_parts_properties, "custom_parts_collection")
+                row = box.row(align=True)
 
         elif props.panel_enums == "EXPORT":
             row.label(text="Export")
@@ -80,8 +70,10 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             row.label(text="Paths :", icon="FILE_FOLDER")
             row = box.row(align=True)
             row.prop(prefs, 'wf_path')
-            # TODO : Implement
-            # row.prop(prefs, 'export_message_level')
+
+
+# TODO : Implement
+# row.prop(prefs, 'export_message_level')
 
 class WFTB_PT_wreckfest_material_panel(bpy.types.Panel):
     """Add a Wreckfest menu to the Material Panel"""
@@ -97,6 +89,7 @@ class WFTB_PT_wreckfest_material_panel(bpy.types.Panel):
         row.prop(prefs, "wf_physical_material_list", text="Physical Material")
         row = self.layout.row(align=True)
         row.operator("wftb.set_physical_material", text="Apply", icon='CHECKMARK')
+
 
 class WFTB_MT_object_context_menu(bpy.types.Menu):
     """Add a wreckfest menu to the Right Click"""

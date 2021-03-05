@@ -1,16 +1,20 @@
 import bpy
 from bpy.utils import register_class, unregister_class
 
-
 CLASSES = [
     ("preferences", ["WreckfestToolboxAddonPreference", "WreckfestPanelContext"]),
+    ("utils.wreckfest_custom_parts_properties", ["CustomPartsProperties"]),
     ("utils.export_bgo", ["WFTB_OP_export_bgo_with_dialog", "WFTB_OP_export_bgo"]),
     ("utils.material_node", ["WreckfestWrapperNode", ]),
     ("operators.wreckfest_properties_operators", ["WreckfestCarPropertyGroup", "WFTB_OT_toggle_wreckfest_custom_data"]),
     ("operators.wreckfest_physical_material_operator", ["WFTB_OT_set_physical_material", ]),
-    ("operators.custom_part_management", ["WFTB_OT_refresh_custom_part_manager",
-                                          "WFTB_OT_set_custom_part",
-                                          "WFTB_OT_swith_custom_part"]),
+    ("operators.wreckfest_custom_parts_operators", [
+        "WFTB_OT_use_custom_parts",
+        "WFTB_OT_refresh_custom_parts_manager",
+        "WFTB_OT_set_custom_part",
+        "WFTB_OT_swith_custom_part",
+        "WFTB_UL_custom_part_list"]
+     ),
     ("ui.menus", ["WFTB_PT_wreckfest_toolbox_panel",
                   "WFTB_PT_wreckfest_material_panel",
                   "WFTB_MT_object_context_menu"])
@@ -55,6 +59,3 @@ def unregister_menus():
 def object_context_menu(self, context):
     self.layout.separator()
     self.layout.menu("WFTB_MT_object_context_menu")
-
-
-

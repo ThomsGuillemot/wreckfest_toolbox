@@ -61,6 +61,7 @@ def register():
     bpy.types.WindowManager.WFTBPanel = bpy.props.PointerProperty(
         type=preferences.WreckfestPanelContext
     )
+
     registration.register_menus()
     # Register Wrapper Node
     newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Wreckfest", items=[NodeItem("WreckfestWrapperNode"), ]), ]
@@ -70,13 +71,10 @@ def register():
 def unregister():
     global classes
 
-    unregister_node_categories("CUSTOM_NODES")
-
     registration.unregister_menus()
 
-    registration.unregister_classes(classes)
+    unregister_node_categories("CUSTOM_NODES")
 
     del bpy.types.WindowManager.WFTBPanel
 
-
-
+    registration.unregister_classes(classes)
