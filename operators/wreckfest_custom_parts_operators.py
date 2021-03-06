@@ -70,6 +70,7 @@ class WFTB_OT_set_custom_part(bpy.types.Operator):
 
 
 class WFTB_OT_swith_custom_part(bpy.types.Operator):
+    """Show the Custom part that have this number, and hide the other related parts"""
     bl_idname = "wftb.switch_custom_part"
     bl_label = "Switch Custom Part"
     bl_options = {'REGISTER', 'UNDO'}
@@ -81,18 +82,21 @@ class WFTB_OT_swith_custom_part(bpy.types.Operator):
     )
 
     def execute(self, context):
-        custom_part_properties = context.scene.get("wftb_custom_part_properties")
-        if custom_part_properties is None:
-            return {'CANCELLED'}
-        return {'FINISHED'}
+        custom_parts = CustomPartsProperties.fetch_custom_parts()
         part_name = CustomPartsProperties.get_custom_part_name(self.custom_part_name)
-        if part_name in custom_part_properties.custom_parts.keys():
-            for part in custom_part_properties.custom_parts[part_name]:
-                visibility = part.name != self.custom_part_name
-                print(part.name, visibility)
-                part.hide_set(visibility)
-
-        return {'FINISHED'}
+        if part_name in custom_parts.keys():
+            for part in custom_parts[part_name]:
+                if part.name in context.view_layer.objects:
+                    part.hide_set(part.name != self.custom_part_name)
+            return {'FINISHED'}
+        elif len(part_name) == 0:
+            for custom_part, parts in custom_parts.items():
+                for part in parts:
+                    if part.name in context.view_layer.objects:
+                        part.hide_set("#part0" not in part.name)
+            return {'FINISHED'}
+        else:
+            return {'CANCELLED'}
 
 
 class WFTB_UL_custom_part_list(bpy.types.UIList):
