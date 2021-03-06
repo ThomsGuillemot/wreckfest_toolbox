@@ -98,21 +98,3 @@ class WFTB_OT_swith_custom_part(bpy.types.Operator):
         else:
             return {'CANCELLED'}
 
-
-class WFTB_UL_custom_part_list(bpy.types.UIList):
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        collection = data
-        obj = item
-        assert (isinstance(item, bpy.types.Object))
-        # draw_item must handle the three layout types... Usually 'DEFAULT' and 'COMPACT' can share the same code.
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            # You should always start your row layout by a label (icon + text), or a non-embossed text field,
-            # this will also make the row easily selectable in the list! The later also enables ctrl-click rename.
-            # We use icon_value of label, as our given icon is an integer value, not an enum ID.
-            # Note "data" names should never be translated!
-            layout.label(text=item.name)
-        # 'GRID' layout type should be as compact as possible (typically a single icon!).
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text=item.name)

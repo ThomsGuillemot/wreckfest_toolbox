@@ -12,8 +12,7 @@ CLASSES = [
         "WFTB_OT_use_custom_parts",
         "WFTB_OT_refresh_custom_parts_manager",
         "WFTB_OT_set_custom_part",
-        "WFTB_OT_swith_custom_part",
-        "WFTB_UL_custom_part_list"]
+        "WFTB_OT_swith_custom_part"]
      ),
     ("ui.menus", ["WFTB_PT_wreckfest_toolbox_panel",
                   "WFTB_PT_wreckfest_material_panel",

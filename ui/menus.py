@@ -29,15 +29,7 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             # Manage the custom parts
             box = layout.box()
             row = box.row(align=True)
-            """
-            row.operator("wftb.use_custom_parts", icon="FILE_REFRESH")
-            if CustomPartsProperties.is_custom_parts_properties_valid(context):
-                row.operator("wftb.refresh_custom_part_manager", icon="FILE_REFRESH")
-                row = box.row(align=True)
-                row.prop(context.scene.wftb_custom_parts_properties, "custom_parts_collection")
-                row = box.row(align=True)
-                row.prop(context.scene.wftb_custom_parts_properties, "wheel_name_prefix")
-            """
+
             row = box.row(align=True)
             op = row.operator("wftb.switch_custom_part", text="Show all #parts0")
             op.custom_part_name = ""
@@ -45,16 +37,15 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             for custom_part_name, part_objects in custom_parts.items():
                 inner_box = box.box()
                 row = inner_box.row(align=True)
-                row.label(text=custom_part_name)
-                row = inner_box.row(align=True)
-                op = row.operator("wftb.switch_custom_part", text="E")
+                op = row.operator("wftb.switch_custom_part", text=custom_part_name + " : Empty", icon="CANCEL")
                 op.custom_part_name = custom_part_name
+                row = inner_box.row(align=True)
                 c = 0
                 for part in part_objects:
                     op = row.operator("wftb.switch_custom_part", text=str(c))
                     op.custom_part_name = part.name
                     c += 1
-                    if ((c + 1) % 5) == 0:
+                    if ((c) % 5) == 0:
                         row = inner_box.row(align=True)
 
         elif props.panel_enums == "EXPORT":
