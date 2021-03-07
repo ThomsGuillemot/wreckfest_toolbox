@@ -458,9 +458,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             custom_data += "\r"
 
         for key, value in obj.items():
-            if key.startswith("WFTB_"):
+            if key.startswith("WF_"):
                 prop_value = bool(value)
-                custom_data += key[5:] + " = " + str(prop_value).lower() + "\r"
+                custom_data += key[3:] + " = " + str(prop_value).lower() + "\r"
 
         return custom_data
 
