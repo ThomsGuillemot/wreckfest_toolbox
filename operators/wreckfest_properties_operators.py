@@ -10,7 +10,7 @@ wreckfest_property_state = [
 ]
 
 
-class WreckfestCarPropertyGroup(bpy.types.PropertyGroup):
+class WreckfestCustomDataGroup(bpy.types.PropertyGroup):
     is_collision_model: bpy.props.EnumProperty(
         items=wreckfest_property_state, name="IsCollisionModel",
         description="Car : Set the model as Collision mode\n"
@@ -49,7 +49,7 @@ class WFTB_OT_toggle_wreckfest_custom_data(bpy.types.Operator):
     bl_label = "Manage Custom Data"
     bl_options = {'REGISTER', 'UNDO'}
 
-    wf_props: bpy.props.PointerProperty(type=WreckfestCarPropertyGroup, options={'SKIP_SAVE'})
+    wf_props: bpy.props.PointerProperty(type=WreckfestCustomDataGroup, options={'SKIP_SAVE'})
     show_more: bpy.props.BoolProperty(name="Show More Properties", default=False)
 
     def draw(self, context):
@@ -104,14 +104,14 @@ class WFTB_OT_toggle_wreckfest_custom_data(bpy.types.Operator):
     def toggle_property(self, obj, enum_property):
         prop_name = self.wf_props.bl_rna.properties.get(enum_property[0]).name
         # If Unset
-        if enum_property[1] == 1 and (("WFTB_" + prop_name) in obj.keys()):
-            del obj["WFTB_" + prop_name]
+        if enum_property[1] == 1 and (("WF_" + prop_name) in obj.keys()):
+            del obj["WF_" + prop_name]
         # else if True
         elif enum_property[1] == 2:
-            obj["WFTB_" + prop_name] = 1
+            obj["WF_" + prop_name] = 1
         # else if False
         elif enum_property[1] == 3:
-            obj["WFTB_" + prop_name] = 0
+            obj["WF_" + prop_name] = 0
 
     def reset_properties(self):
         items = self.wf_props.items()
