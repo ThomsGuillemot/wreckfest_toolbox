@@ -14,7 +14,11 @@ CLASSES = [
         "WFTB_OT_set_custom_part",
         "WFTB_OT_swith_custom_part"]
      ),
-    ("operators.car_export_validator_operators", ["WFTB_OT_car_export_validator", "WFTB_OT_create_car_collisions"]),
+    ("operators.car_export_validator_operators", [
+        "WFTB_OT_car_export_validator", 
+        "WFTB_OT_create_car_collisions",
+        "WFTB_OT_create_car_proxy"]
+     ),
     ("ui.menus", ["WFTB_PT_wreckfest_toolbox_panel",
                   "WFTB_PT_wreckfest_material_panel",
                   "WFTB_MT_object_context_menu"])
