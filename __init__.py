@@ -58,9 +58,6 @@ def register():
     global classes
 
     classes = registration.register_classes(registration.CLASSES)
-    bpy.types.WindowManager.WFTBPanel = bpy.props.PointerProperty(
-        type=preferences.WreckfestPanelContext
-    )
 
     registration.register_menus()
     # Register Wrapper Node
@@ -75,6 +72,6 @@ def unregister():
 
     unregister_node_categories("CUSTOM_NODES")
 
-    del bpy.types.WindowManager.WFTBPanel
+
 
     registration.unregister_classes(classes)

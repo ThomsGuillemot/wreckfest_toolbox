@@ -14,9 +14,9 @@ class WreckfestPanelContext(bpy.types.PropertyGroup):
     """Properties that can be changed in panel"""
     panel_enums: bpy.props.EnumProperty(
         items=(
-            ("CUSTOM_PARTS", "Custom Parts", "Manage custom parts", "PRESET", 0),
+            ("CAR_TOOLS", "Car Tools", "Car Related Tools", "AUTO", 0),
             ("EXPORT", "Export", "Export scene tools", "EXPORT", 1),
-            ("SETTINGS", "Addon Settings", "Addon Settings", "PREFERENCES", 3),
+            ("SETTINGS", "Addon Settings", "Addon Settings", "PREFERENCES", 2),
         ),
         name="Addon Panels",
     )

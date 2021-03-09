@@ -1,24 +1,21 @@
 import bpy
-from mathutils import Vector
+from wreckfest_toolbox.utils import car_export_validator as validator
 
 
+collection_usage = [
+    ("NOT", "Don't use", "Don't use the collection"),
+    ("ADD", "Add", "Add the object to the collection"),
+    ("MOVE", "Move", "Move the object to the collection")
+]
 
-class WFTB_OT_car_export_validator(bpy.types.Operator):
-    bl_idname = "wftb.car_export_validator"
-    bl_label = "Car : Validate scene"
 
-    def execute(self, context):
+def move_gameplay_object_to_collection(contex: bpy.types.Context, obj: bpy.types.Object, collection_name: str):
+    if collection_name in bpy.data.collections and obj.name not in bpy.data.collections[collection_name].objects:
+        for collection in obj.users_collection:
+            collection.objects.unlink(obj)
 
-        return{'FINISHED'}
-        
-    @staticmethod
-    def move_gameplay_object_to_collection(contex:bpy.types.Context, obj:bpy.types.Object, collection_name:str):
-        if collection_name in bpy.data.collections and obj.name not in bpy.data.collections[collection_name].objects:
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-                
-            collection = bpy.data.collections[collection_name]
-            collection.objects.link(obj)
+        collection = bpy.data.collections[collection_name]
+        collection.objects.link(obj)
 
 
 class WFTB_OT_create_car_collisions(bpy.types.Operator):
@@ -45,7 +42,7 @@ class WFTB_OT_create_car_collisions(bpy.types.Operator):
         # TODO : Use WreckfestCustomDataGroup property instead of hard coding it
         collision_bottom["WF_IsCollisionModel"] = 1
         
-        WFTB_OT_car_export_validator.move_gameplay_object_to_collection(context, cube, "Collisions")
+        move_gameplay_object_to_collection(context, cube, "Collisions")
 
         if 'collision_top' not in bpy.data.objects:
             bpy.ops.mesh.primitive_cube_add()
@@ -59,7 +56,7 @@ class WFTB_OT_create_car_collisions(bpy.types.Operator):
         # TODO : Use WreckfestCustomDataGroup property instead of hard coding it
         collision_top["WF_IsCollisionModel"] = 1
         
-        WFTB_OT_car_export_validator.move_gameplay_object_to_collection(context, cube, "Collisions")
+        move_gameplay_object_to_collection(context, cube, "Collisions")
 
         return {'FINISHED'}
 
@@ -85,9 +82,47 @@ class WFTB_OT_create_car_proxy(bpy.types.Operator):
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
         context.active_object["WF_IsCollisionModel"] = True
         
-        WFTB_OT_car_export_validator.move_gameplay_object_to_collection(context, cube, "Proxies")
+        validator.move_gameplay_object_to_collection(context, cube, "Proxies")
             
         return {'FINISHED'}
         
     def draw(self, context):
         self.layout.prop(self, "proxy_name")
+
+class WFTB_OT_validate_collision_spheres(bpy.types.Operator):
+    """Get all the collision spheres (object with name starting with collision_sphere_) and name them correctly.
+    It also add the good property on it (IsCollisionModel). And add them to Collision Spheres collection if wanted"""
+    bl_idname = "wftb.validate_collision_spheres"
+    bl_label = "Validate Collision Spheres"
+    bl_options = {"UNDO", "REGISTER"}
+
+    use_collection: bpy.props.EnumProperty(
+        items=collection_usage,
+        name="Move to collection",
+        description="Move the collision spheres to the Collision Spheres collection, it create the collection if needed",
+        default="NOT"
+    )
+
+    def execute(self, context: bpy.types.Context):
+        collection = None
+        if self.use_collection != "NOT":
+            if "Collision Spheres" not in bpy.data.collections:
+                collection = bpy.data.collections.new("Collision Spheres")
+                context.scene.collection.children.link(collection)
+            collection = bpy.data.collections["Collision Sphere"]
+
+        # Get all the spheres
+        counter = 0
+        for sphere in validator.get_collision_spheres:
+            sphere.name = "collision_sphere_" + str(counter)
+            if self.use_collection == "MOVE":
+                move_gameplay_object_to_collection(sphere, collection.name)
+            elif self.use_collection == "ADD":
+                collection.objects.link(sphere)
+
+        return {"FINISHED"}
+
+    def draw(self, context: bpy.types.Context):
+        column = self.layout.column()
+        column.prop(self, "use_collection")
+        return
