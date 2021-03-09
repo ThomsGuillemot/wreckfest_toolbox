@@ -103,21 +103,36 @@ class WFTB_OT_validate_collision_spheres(bpy.types.Operator):
         default="NOT"
     )
 
+    def invoke(self, context: 'Context', event: 'Event'):
+        # Get all the spheres
+        spheres = validator.get_collision_spheres(context)
+        counter = 0
+        # Rename with fake names sor I avoid the .001
+        for sphere in spheres:
+            sphere.name = "collision_sphere_" + str(counter) + "_tmp"
+            counter += 1
+
+        # Apply the correct name
+        counter = 0
+        for sphere in spheres:
+            sphere.name = "collision_sphere_" + str(counter)
+            counter += 1
+
+        return {'FINISHED'}
+
     def execute(self, context: bpy.types.Context):
         collection = None
         if self.use_collection != "NOT":
             if "Collision Spheres" not in bpy.data.collections:
                 collection = bpy.data.collections.new("Collision Spheres")
                 context.scene.collection.children.link(collection)
-            collection = bpy.data.collections["Collision Sphere"]
+            collection = bpy.data.collections["Collision Spheres"]
 
-        # Get all the spheres
-        counter = 0
-        for sphere in validator.get_collision_spheres:
-            sphere.name = "collision_sphere_" + str(counter)
+        spheres = validator.get_collision_spheres(context)
+        for sphere in spheres:
             if self.use_collection == "MOVE":
-                move_gameplay_object_to_collection(sphere, collection.name)
-            elif self.use_collection == "ADD":
+                move_gameplay_object_to_collection(context, sphere, collection.name)
+            elif self.use_collection == "ADD" and collection not in sphere.users_collection:
                 collection.objects.link(sphere)
 
         return {"FINISHED"}
