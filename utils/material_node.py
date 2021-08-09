@@ -155,36 +155,36 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
             pass
 
         if self.specular_level_image is None:
-            link(input_node.outputs['SpecularLevel'], bsdf.inputs[5])
+            link(input_node.outputs['SpecularLevel'], bsdf.inputs['Specular'])
         else:
             specular_level_texture = add_node('ShaderNodeTexImage')
             specular_level_texture.name = 'Specular Level Texture'
             specular_level_texture.image = self.specular_level_image
-            link(specular_level_texture.outputs[0], bsdf.inputs[5])
+            link(specular_level_texture.outputs[0], bsdf.inputs['Specular'])
 
         if self.glossiness_image is None:
-            link(input_node.outputs['Glossiness'], bsdf.inputs[12])
+            link(input_node.outputs['Glossiness'], bsdf.inputs['Clearcoat'])
         else:
             glossiness_texture = add_node('ShaderNodeTexImage')
             glossiness_texture.name = 'Glossiness Texture'
             glossiness_texture.image = self.glossiness_image
-            link(glossiness_texture.outputs[0], bsdf.inputs[12])
+            link(glossiness_texture.outputs[0], bsdf.inputs['Clearcoat'])
 
         if self.self_illumination_image is None:
-            link(input_node.outputs['SelfIllumination'], bsdf.inputs[17])
+            link(input_node.outputs['SelfIllumination'], bsdf.inputs['Emission'])
         else:
             self_illumination_texture = add_node('ShaderNodeTexImage')
             self_illumination_texture.name = 'Self Illumination Texture'
             self_illumination_texture.image = self.self_illumination_image
-            link(self_illumination_texture.outputs[0], bsdf.inputs[17])
+            link(self_illumination_texture.outputs[0], bsdf.inputs['Emission'])
 
         if self.opacity_image is None:
-            link(input_node.outputs['Opacity'], bsdf.inputs[18])
+            link(input_node.outputs['Opacity'], bsdf.inputs['Alpha'])
         else:
             opacity_texture = add_node('ShaderNodeTexImage')
             opacity_texture.name = 'Opacity Texture'
             opacity_texture.image = self.opacity_image
-            link(opacity_texture.outputs[0], bsdf.inputs[18])
+            link(opacity_texture.outputs[0], bsdf.inputs['Alpha'])
 
         if self.filter_color_image is None:
             link(input_node.outputs['FilterColor'], invert.inputs[1])
@@ -211,12 +211,12 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
             link(mrs_texture.outputs[0], split_mrs.inputs[0])
 
         if self.refraction_image is None:
-            link(input_node.outputs['Refraction'], bsdf.inputs[14])
+            link(input_node.outputs['Refraction'], bsdf.inputs['IOR'])
         else:
             refraction_texture = add_node('ShaderNodeTexImage')
             refraction_texture.name = 'Refraction Texture'
             refraction_texture.image = self.refraction_image
-            link(refraction_texture.outputs[0], bsdf.inputs[14])
+            link(refraction_texture.outputs[0], bsdf.inputs['IOR'])
 
         if self.displacement_image is None:
             link(input_node.outputs['Displacement'], displacement.inputs[0])
@@ -227,14 +227,14 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
             link(displacement_texture.outputs[0], displacement.inputs[0])
 
         # -Normal Map
-        link(normal_map.outputs[0], bsdf.inputs[19])
+        link(normal_map.outputs[0], bsdf.inputs['Normal'])
         # -Apply AO on Base Color
         link(invert.outputs[0], mix_rgb.inputs[0])
-        link(mix_rgb.outputs[0], bsdf.inputs[0])
+        link(mix_rgb.outputs[0], bsdf.inputs['Base Color'])
         # -Separate Metallic Roughness Specular
-        link(split_mrs.outputs[0], bsdf.inputs[4])
-        link(split_mrs.outputs[1], bsdf.inputs[7])
-        link(split_mrs.outputs[2], bsdf.inputs[6])
+        link(split_mrs.outputs[0], bsdf.inputs['Metallic'])
+        link(split_mrs.outputs[1], bsdf.inputs['Roughness'])
+        link(split_mrs.outputs[2], bsdf.inputs['Specular Tint'])
         # -outputs
         link(bsdf.outputs[0], output_node.inputs[0])
         link(displacement.outputs[0], output_node.inputs[1])
