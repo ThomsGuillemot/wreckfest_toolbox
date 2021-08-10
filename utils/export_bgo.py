@@ -381,7 +381,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             texture_path = 'data/art/textures/tmp_red_c.tga'
         # Rename unsupported formats to bypass build_asset checks. PNG should be removed from here once it's officially supported.
         if texture_path[-4:].lower() in ['.png','.jpg']: 
-            final_texname = final_texname[:-4] + '.tga'
+            texture_path = texture_path[:-4] + '.tga'
 
         self.write_texture_individual(slotid, texture_path, file)
 
