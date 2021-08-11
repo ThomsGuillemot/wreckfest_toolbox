@@ -13,6 +13,7 @@ import time
 import struct
 import bpy
 import bmesh
+import math
 import mathutils
 from bpy_extras.io_utils import ExportHelper
 
@@ -120,12 +121,12 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         # Force object mode
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        time1 = time.clock()
+        time1 = time.time()
         wm = bpy.context.window_manager
         total = 100
         wm.progress_begin(0, total)
         with open(self.export_path, 'wb') as file:
-            file.write(struct.pack('I', 0))
+            file.write(struct.pack('I', 0)) # File length
             file.write(bytes('MAIN', 'utf-8'))
             print("Write Info ...")
             self.write_info(file)
@@ -133,9 +134,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             self.write_materials(file)
             print("Write Objects ...")
             self.write_objects(file)
-            self.write_filelen(0, file)
+            self.write_filelen(0, file) # Rewrite file length at the beginning
 
-        self.show_message('export done in %.4f sec.' % (time.clock() - time1))
+        self.show_message('export done in %.4f sec.' % (time.time() - time1))
         print("----------------------------------------")
         if self.prefs.get("build_after_export"):
             self.build_and_notify()
@@ -294,8 +295,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_color3f(mat.diffuse_color, file)
         self.write_color3f(mat.diffuse_color, file)
         self.write_color3f(mat.specular_color, file)
-        file.write(struct.pack('f', mat.specular_intensity))
         file.write(struct.pack('f', mat.roughness))
+        file.write(struct.pack('f', mat.specular_intensity))
         mat_alpha = 1
         if mat.diffuse_color[3] < 1:
             mat_alpha = mat.diffuse_color[3]  # hopefully fixed right
@@ -378,6 +379,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             texture_path = self.get_relative_texpath(absolute_texture_path)
         if texture_path is None:
             texture_path = 'data/art/textures/tmp_red_c.tga'
+        # Rename unsupported formats to bypass build_asset checks. PNG should be removed from here once it's officially supported.
+        if texture_path[-4:].lower() in ['.png','.jpg']: 
+            texture_path = texture_path[:-4] + '.tga'
 
         self.write_texture_individual(slotid, texture_path, file)
 
@@ -399,7 +403,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         # temp_mesh = ob.to_mesh()
         # bm.from_mesh(temp_mesh)
         depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=depsgraph, deform=self.prefs.get("apply_modifiers", True))
+        bm.from_object(object=ob, depsgraph=depsgraph, deform=self.prefs.get("apply_modifiers", True)) # NOTE: Deform is deprecated will be removed in Blender 3.0
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
@@ -432,7 +436,62 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_filelen(gmesh_start_offset, file, -8)
 
     @staticmethod
-    def find_xref_path(self, obname, exporting_to_path=""):  # Find xref path from object name
+    def get_keyframes(obj): # Get every keyframe. Subframes return as decimals.
+        keyframes = []
+        if obj.animation_data is not None and obj.animation_data.action is not None:
+            for fcu in obj.animation_data.action.fcurves:
+                for keyframe in fcu.keyframe_points:
+                    keyframes.append(keyframe.co.x) #co.x = time
+        return sorted(set(keyframes)) #remove doubles and order
+
+    @staticmethod
+    def write_animations(self, file, exportables, objects_id_dictionary, bake_animation=False):
+        second = 4800 # length of second (3dsMax internal unit)
+        fps = round(bpy.context.scene.render.fps / bpy.context.scene.render.fps_base)
+        firstFrameTime = round(bpy.context.scene.frame_start / fps * second)
+        lastFrameTime = round(bpy.context.scene.frame_end / fps * second)
+
+        # Write animation Info header
+        anfo_offset = self.create_header('ANFO', 0, file)
+        file.write(struct.pack('5I', second, firstFrameTime, fps, 0, lastFrameTime)) 
+        file.write(struct.pack('8I', 0, 0, 0, 0, 0, 0, 0, 0))
+
+        frame_before = bpy.context.scene.frame_current #backup frame selection
+        for obj in exportables:
+            if obj.animation_data is not None and obj.animation_data.action is not None:
+                if self.find_object_type(obj) == 'OBJM':    
+                    anim_offset = self.create_header('ANIM', 0, file)
+                    file.write(struct.pack('L', objects_id_dictionary[obj.name])) #Object ID (reference to mesh)
+                    asmp_offset = self.create_header('ASMP', 0, file)
+
+                    keys = self.get_keyframes(obj) # Get every keyframe number
+                    
+                    if(bake_animation): # 1 Keyframe every Blender frame
+                        firstFrame = round(keys[0])
+                        lastFrame = round(keys[-1])
+                        file.write(struct.pack('I', lastFrame-firstFrame+1)) #Number of keyframes
+                        for frame in range(firstFrame, lastFrame+1):
+                            bpy.context.scene.frame_set(frame) #move to frame
+                            wfTime = round((frame - bpy.context.scene.frame_start) / fps * second) #time
+                            if(wfTime<0): wfTime = 0 # bugfix for frames before frame_start
+                            file.write(struct.pack('I', wfTime)) 
+                            self.write_flipped_matrix(obj.matrix_local, file) #transform matrix
+                    else: # Original keyframe data
+                        file.write(struct.pack('I', len(keys))) #Number of keyframes
+                        for frame in keys:
+                            bpy.context.scene.frame_set(frame=math.floor(frame), subframe=frame%1) #move to frame
+                            wfTime = round((frame - bpy.context.scene.frame_start) / fps * second) #time
+                            if(wfTime<0): wfTime = 0 # bugfix for frames before frame_start
+                            file.write(struct.pack('I', wfTime)) 
+                            self.write_flipped_matrix(obj.matrix_local, file) #transform matrix
+
+                    self.write_filelen(asmp_offset, file, 0)
+                    self.write_filelen(anim_offset, file, 0)
+        self.write_filelen(anfo_offset, file, 0)
+        bpy.context.scene.frame_set(frame_before) #restore original frame selection
+
+    @staticmethod
+    def find_xref_path(obname, exporting_to_path=""):  # Find xref path from object name
         name = obname.replace('\\', '/')
         name = name.replace("#xref", "")
         name = name.replace(" ", "")
@@ -444,7 +503,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         return name
 
     @staticmethod
-    def fake_xref_name(self, name):  # fake 3dsmax style name
+    def fake_xref_name(name):  # fake 3dsmax style name
         name = name.replace('\\', '/').split("/")[-1]
         name = name.replace(".scne.", "#xref")
         name = name.replace(".scne", "#xref")
@@ -464,7 +523,18 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         return custom_data
 
-    def write_objects(self, file):
+    @staticmethod
+    def find_object_type(ob):
+        # OBJX = Subscene: Object with #xref in name (unofficial) or Object with linked library (File > link)
+        if ob.name.strip().startswith("#xref") or (ob.data is not None and ob.data.library is not None):
+            return 'OBJX'
+        if ob.type == 'MESH':
+            return 'OBJM'
+        if ob.type == 'EMPTY':
+            return 'OBJD'
+        return ''
+
+    def write_objects(self, file, bake_animation=True):
         """Get all the objects that are not in a collection with the suffix #exclude"""
         hier_start_offset = self.create_header('HIER', 0, file)
         exportables = self.get_exportables()
@@ -473,21 +543,12 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         objects_id_current = 1
         objects_id_mesh = -1
         for obj in exportables:
-            # print('writing object ' + obj.name)
-            object_type = ''
-            is_xref_subscene = obj.name.strip().startswith("#xref")
-            # Set the type of object
-            if is_xref_subscene or (obj.data is not None and obj.data.library is not None):
-                object_type = 'OBJX'
-            else:
-                if obj.type == 'MESH':
-                    object_type = 'OBJM'
-                    objects_id_mesh += 1
-                else:
-                    if obj.type == 'EMPTY':
-                        object_type = 'OBJD'
-                    else:
-                        continue
+            #print('writing object ' + obj.name)
+            object_type = self.find_object_type(obj)
+            if object_type == '':
+                continue
+            if object_type == 'OBJM':
+                objects_id_mesh += 1
 
             objects_id_dictionary[obj.name] = objects_id_current
             object_offset = self.create_header(object_type, 0, file)
@@ -511,7 +572,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 self.write_matrix(self.create_blank_matrix(), file)
 
             file.write(struct.pack('II', 0, 3))
-            if is_xref_subscene:
+            if obj.name.strip().startswith("#xref"):  # Rewriting names of Xref Subscene
                 self.write_cstring(self.fake_xref_name(obj.name), file)
             else:
                 self.write_cstring(obj.name, file)
@@ -525,13 +586,18 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 file.write(struct.pack('I', objects_id_mesh))
                 self.write_gmesh(obj, file)
             if object_type == 'OBJX':
-                if is_xref_subscene:  # Xref Subscene (Unofficial)
+                if obj.name.strip().startswith("#xref"): # Xref Subscene (Unofficial)
                     self.write_cstring(self.find_xref_path(obj.name)[:-5] + '.scn', file)
                 else:  # File > link Subscene
                     apth = os.path.abspath(bpy.path.abspath(obj.data.library.filepath))
                     self.write_cstring(str(self.get_relative_texpath(apth.replace(".blend", ".ble"))), file)
             objects_id_current += 1
+
             self.write_filelen(object_offset, file, -8)
+            self.write_filelen(hier_start_offset, file, -8)
+
+        self.write_animations(self, file, exportables, objects_id_dictionary, bake_animation)
+
 
     def build_and_notify(self):
         build_asset_file = self.prefs.get("wf_path") + R"\tools\build_asset.bat"
