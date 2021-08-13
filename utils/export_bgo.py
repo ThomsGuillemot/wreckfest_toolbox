@@ -518,8 +518,14 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         for key, value in obj.items():
             if key.startswith("WF_"):
-                prop_value = bool(value)
-                custom_data += key[3:] + " = " + str(prop_value).lower() + "\r"
+                if value in [1, '1', 'true']: # Boolean is int, Manually typed value is sometimes string.
+                    prop_value = "true"
+                elif value in [0, '0', 'false']:
+                    prop_value = "false"
+                else: # Other text values
+                    prop_value = '"' + str(value).strip('"') + '"'
+                custom_data += key[3:] + " = " + prop_value + "\r"
+                print (custom_data)
 
         return custom_data
 
