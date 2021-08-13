@@ -316,7 +316,14 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     self.write_wreckfest_wrapper_node(nd, file)
                     is_material_written = True
                     break
-            # if no wreckfest node found, look for principled_bsdf
+            # if no wreckfest node found, look for nodegroup with #export in name
+            if not is_material_written:
+                for nd in mat.node_tree.nodes:
+                    if "#export" in nd.label.lower():
+                        self.write_nodegroup_node(nd, mat, file)
+                        is_material_written = True
+                        break
+            # at last look for principled_bsdf
             if not is_material_written:
                 for nd in mat.node_tree.nodes:
                     if nd.type == 'BSDF_PRINCIPLED':
@@ -368,6 +375,28 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     'Texture in incorrect slot "' + tn + '" in material: "' + mat.name + '"',
                     'ERROR')
                 self.write_texture_node_individual(tex_nodes[tn], 1, file)  # default to slot 1
+
+    def write_nodegroup_node(self, node, mat, file):
+        # Create a list of linked TEX_IMAGE Node
+        tex_nodes = []
+
+        # Go through nodegroup node inputs
+        node_id = -1
+        for sh_in in node.inputs:
+            node_id += 1
+            # WARNING : This can skip texture if people link smtg else than a TEX_IMAGE and/or link multiple things
+            if node_id < 12 and sh_in.is_linked and sh_in.links[0].from_socket.node.type == 'TEX_IMAGE':
+                tn = {}
+                tn["node"] = sh_in.links[0].from_socket.node
+                tn["id"] = node_id
+                tex_nodes += (tn),
+
+        # Write len of linked Tex Nodes
+        file.write(struct.pack('I', len(tex_nodes)))
+
+        # Go through valid texture nodes with their link
+        for tn in tex_nodes:
+            self.write_texture_node_individual(tn["node"], tn["id"], file)
 
     # This method take a  TEX Node in param, and it's slot_id from Princ BSDF to WF dict
 
