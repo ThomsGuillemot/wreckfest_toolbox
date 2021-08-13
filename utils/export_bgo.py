@@ -513,8 +513,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     def get_custom_data(obj):
         custom_data = ""
         if 'CustomData' in obj:
-            custom_data = obj['CustomData']
-            custom_data += "\r"
+            custom_data = obj['CustomData'] + "\r\n"
 
         for key, value in obj.items():
             if key.startswith("WF_"):
@@ -524,8 +523,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     prop_value = "false"
                 else: # Other text values
                     prop_value = '"' + str(value).strip('"') + '"'
-                custom_data += key[3:] + " = " + prop_value + "\r"
-                print (custom_data)
+                custom_data += key[3:] + " = " + prop_value + "\r\n"
 
         return custom_data
 
