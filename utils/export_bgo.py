@@ -138,7 +138,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         self.show_message('export done in %.4f sec.' % (time.time() - time1))
         print("----------------------------------------")
-        if self.prefs.get("build_after_export"):
+        if self.prefs.build_after_export:
             self.build_and_notify()
 
         return {'FINISHED'}
@@ -432,7 +432,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         # temp_mesh = ob.to_mesh()
         # bm.from_mesh(temp_mesh)
         depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=depsgraph, deform=self.prefs.get("apply_modifiers", True)) # NOTE: Deform is deprecated will be removed in Blender 3.0
+        bm.from_object(object=ob, depsgraph=depsgraph, deform=self.prefs.apply_modifiers) # NOTE: Deform is deprecated will be removed in Blender 3.0
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
@@ -633,7 +633,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
 
     def build_and_notify(self):
-        build_asset_file = self.prefs.get("wf_path") + R"\tools\build_asset.bat"
+        build_asset_file = self.prefs.wf_path + R"\tools\build_asset.bat"
         popen_args = [build_asset_file, self.export_path]
         if os.path.exists(build_asset_file):
             print("Building asset ...")
