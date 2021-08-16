@@ -316,13 +316,14 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     self.write_wreckfest_wrapper_node(nd, file)
                     is_material_written = True
                     break
-            # if no wreckfest node found, look for nodegroup with #export in name
+            # if no wreckfest node found, look for node group with #export in title.
             if not is_material_written:
                 for nd in mat.node_tree.nodes:
-                    if "#export" in nd.label.lower():
-                        self.write_nodegroup_node(nd, mat, file)
-                        is_material_written = True
-                        break
+                    if nd.type == 'GROUP': 
+                        if "#export" in nd.node_tree.name.lower() or "#export" in nd.label.lower(): # Label or Name
+                            self.write_nodegroup_node(nd, mat, file)
+                            is_material_written = True
+                            break
             # at last look for principled_bsdf
             if not is_material_written:
                 for nd in mat.node_tree.nodes:
