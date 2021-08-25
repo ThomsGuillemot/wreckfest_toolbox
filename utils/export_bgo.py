@@ -196,14 +196,14 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         return mat_loc @ mat_rot @ mat_sca
 
     @staticmethod
-    def get_material_offset(mtl):
+    def get_material_offsets():
+        material_offsets = {}
         coffset = 0
         for mat in bpy.data.materials:
-            if mtl.name == mat.name:
-                return coffset
+            material_offsets[mat.name] = coffset
             coffset += 1
 
-        return -1
+        return material_offsets
 
     @staticmethod
     def get_exportables():
@@ -426,6 +426,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_filelen(texc_start_offset, file)
 
     def write_gmesh(self, ob, file):
+        material_offsets = self.get_material_offsets()
         # print('writing mesh for ' + ob.name)
         gmesh_start_offset = self.create_header('GMSH', 0, file)
         bm = bmesh.new()
@@ -441,7 +442,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         for tri in bm_tris:
             mat_index = 0
             try:
-                mat_index = float(self.get_material_offset(ob.data.materials[tri[0].face.material_index]))
+                mat_index = float(material_offsets[ob.data.materials[tri[0].face.material_index].name])
             except Exception:
                 mat_index = 0
 
