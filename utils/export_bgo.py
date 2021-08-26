@@ -438,6 +438,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
+        range_uv_layers = range(uv_layers) # Range outside of loop, faster
         file.write(struct.pack('LL', len(bm_tris), uv_layers))
         for tri in bm_tris:
             mat_index = 0
@@ -447,8 +448,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 mat_index = 0
 
             for loop in tri[::-1]:
-                file.write(struct.pack('ffff', mat_index, loop.vert.co[0], loop.vert.co[2], loop.vert.co[1]))
-                for uvl in range(uv_layers):
+                vco = loop.vert.co
+                file.write(struct.pack('ffff', mat_index, vco[0], vco[2], vco[1]))
+                for uvl in range_uv_layers:
                     uv_data = loop[bm.loops.layers.uv[uvl]].uv
                     c1p = loop.vert.normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
                     c2p = loop.vert.normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
