@@ -119,7 +119,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         print('exporting BGO: %r...' % self.export_path)
 
         # Force object mode
-        bpy.ops.object.mode_set(mode='OBJECT')
+        if bpy.context.object: # If object with modes active 
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         time1 = time.time()
         wm = bpy.context.window_manager
