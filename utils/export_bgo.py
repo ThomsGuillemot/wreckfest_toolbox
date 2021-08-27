@@ -210,8 +210,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     def get_exportables():
         """Get all the objects in the scene"""
         exportables = []
-        # get all the objects of the file
-        for obj in bpy.data.objects:
+        # get all visible objects of the file
+        for obj in bpy.context.view_layer.objects:
             if (obj.type == 'MESH' or obj.type == 'EMPTY') and ('PivotObject' not in obj):
                 is_exportable = True
                 for collection in obj.users_collection:
