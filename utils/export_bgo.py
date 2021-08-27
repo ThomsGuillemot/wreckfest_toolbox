@@ -434,8 +434,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         # TODO : See to_mesh to use preserve all data layer
         # temp_mesh = ob.to_mesh()
         # bm.from_mesh(temp_mesh)
+        # TODO: Apply modifiers based on: self.prefs.apply_modifiers
         depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=depsgraph, deform=self.prefs.apply_modifiers) # NOTE: Deform is deprecated will be removed in Blender 3.0
+        bm.from_object(object=ob, depsgraph=depsgraph) 
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
