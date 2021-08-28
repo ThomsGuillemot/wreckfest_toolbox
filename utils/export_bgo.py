@@ -197,14 +197,12 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         return mat_loc @ mat_rot @ mat_sca
 
     @staticmethod
-    def get_material_offsets():
-        material_offsets = {}
-        coffset = 0
-        for mat in bpy.data.materials:
-            material_offsets[mat.name] = coffset
-            coffset += 1
-
-        return material_offsets
+    def get_material_id_list(obj):
+        # Create dict of all scene material names and indices, {"Name": indice}
+        scene_mat_id = {mat.name: i for i, mat in enumerate(bpy.data.materials)}
+        # Create list of all object's material indices, converted to scene level id
+        indices = [float(scene_mat_id[mat.name]) for i, mat in enumerate(obj.data.materials)]
+        return indices
 
     @staticmethod
     def get_exportables():
@@ -427,7 +425,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_filelen(texc_start_offset, file)
 
     def write_gmesh(self, ob, file):
-        material_offsets = self.get_material_offsets()
+        ob_material_id_list = self.get_material_id_list(ob)
         # print('writing mesh for ' + ob.name)
         gmesh_start_offset = self.create_header('GMSH', 0, file)
         bm = bmesh.new()
@@ -445,7 +443,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         for tri in bm_tris:
             mat_index = 0
             try:
-                mat_index = float(material_offsets[ob.data.materials[tri[0].face.material_index].name])
+                mat_index = ob_material_id_list[tri[0].face.material_index] # Local material id to scene material id
             except Exception:
                 mat_index = 0
 
@@ -453,16 +451,17 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 vco = loop.vert.co
                 file.write(struct.pack('ffff', mat_index, vco[0], vco[2], vco[1]))
                 for uvl in range_uv_layers:
+                    normal = loop.vert.normal # Access bpy once, faster
                     uv_data = loop[bm.loops.layers.uv[uvl]].uv
-                    c1p = loop.vert.normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
-                    c2p = loop.vert.normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
+                    c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
+                    c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
                     loop_tang = c2p
                     if c1p.length > c2p.length:
                         loop_tang = c1p
-                    loop_binormal = loop.vert.normal.cross(loop_tang)
+                    loop_binormal = normal.cross(loop_tang)
                     file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
                                            uv_data[0], ((uv_data[1] - 1) * -1),
-                                           loop.vert.normal[0], loop.vert.normal[2], loop.vert.normal[1],
+                                           normal[0], normal[2], normal[1],
                                            loop_tang[0], loop_tang[2], loop_tang[1],
                                            loop_binormal[0], loop_binormal[2], loop_binormal[1]))
 
