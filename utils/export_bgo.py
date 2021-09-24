@@ -198,10 +198,15 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
     @staticmethod
     def get_material_id_list(obj):
-        # Create dict of all scene material names and indices, {"Name": indice}
+        # Create dict of all scene material names and indices, {"Name": id}
         scene_mat_id = {mat.name: i for i, mat in enumerate(bpy.data.materials)}
-        # Create list of all object's material indices, converted to scene level id
-        indices = [float(scene_mat_id[mat.name]) for i, mat in enumerate(obj.data.materials)]
+        # Create list of all object's material id (global id)
+        indices = []
+        for mat in obj.data.materials:
+            if mat is not None:
+                indices += float(scene_mat_id[mat.name]),
+            else: # Empty material slots reset to 0
+                indices += float(0),
         return indices
 
     @staticmethod
