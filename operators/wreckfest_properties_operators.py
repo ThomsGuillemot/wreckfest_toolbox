@@ -13,17 +13,26 @@ wreckfest_property_state = [
 class WreckfestCustomDataGroup(bpy.types.PropertyGroup):
     is_collision_model: bpy.props.EnumProperty(
         items=wreckfest_property_state, name="IsCollisionModel",
-        description="Car : Set the model as Collision mode\n"
+        description="Vehicle : Set the model as Collision model\n"
                     "It will not appear in game. It's used for collisionSpheres, proxies, ...\n"
                     "!! Do not use it on Solidbody or the export won't work !!"
     )
     in_visual: bpy.props.EnumProperty(
-        items=wreckfest_property_state, name="InVisual",
-        description="Track : Set the model as invisible (Also known as 'Vis')"
+        items=wreckfest_property_state, name="vis",
+        description="Track : Set the model as visible (Also known as 'InVisual')"
     )
     in_collision: bpy.props.EnumProperty(
-        items=wreckfest_property_state, name="InCollision",
-        description="Track : The model is used for collisions (Also known as 'Col')"
+        items=wreckfest_property_state, name="col",
+        description="Track : The model is used for collisions (Also known as 'InCollision')"
+    )
+    otherway: bpy.props.EnumProperty(
+        items=wreckfest_property_state, name="otherway", 
+        description="Track : Reverse routes \nApply property to #ai_route_main"
+    )
+    crossstart: bpy.props.EnumProperty(
+        items=wreckfest_property_state, name="crossstart", 
+        description="Track : Use on alt route when alt route passes over main route start\n"
+                    "Note: Remember to add proxy checkpoint to alt route"
     )
     is_test_model: bpy.props.EnumProperty(items=wreckfest_property_state, name="IsTestModel")
     is_write_model: bpy.props.EnumProperty(items=wreckfest_property_state, name="IsWriteModel")
@@ -46,7 +55,7 @@ class WreckfestCustomDataGroup(bpy.types.PropertyGroup):
 class WFTB_OT_toggle_wreckfest_custom_data(bpy.types.Operator):
     """Set or Unset User data to define the object as a Collision model for Wreckfest"""
     bl_idname = "wftb.toggle_wreckfest_custom_data"
-    bl_label = "Manage Custom Data"
+    bl_label = "Manage Custom Properties"
     bl_options = {'REGISTER', 'UNDO'}
 
     wf_props: bpy.props.PointerProperty(type=WreckfestCustomDataGroup, options={'SKIP_SAVE'})
@@ -57,11 +66,15 @@ class WFTB_OT_toggle_wreckfest_custom_data(bpy.types.Operator):
         column = layout.column(align=True)
         column.prop(self.wf_props, "in_visual")
         column.prop(self.wf_props, "in_collision")
+        column.prop(self.wf_props, "otherway")
+        column.prop(self.wf_props, "crossstart")
+        column.separator()
         column.prop(self.wf_props, "is_collision_model")
         column.separator()
         column.prop(self, 'show_more', icon='HIDE_OFF')
         if self.show_more:
-            box = column.box()
+            box = column.column()
+            box.separator()
             box.prop(self.wf_props, "is_test_model")
             box.prop(self.wf_props, "is_write_model")
             box.prop(self.wf_props, "is_occluder")

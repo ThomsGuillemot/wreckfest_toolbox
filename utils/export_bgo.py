@@ -119,7 +119,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         print('exporting BGO: %r...' % self.export_path)
 
         # Force object mode
-        bpy.ops.object.mode_set(mode='OBJECT')
+        if bpy.context.object: # If object with modes active 
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         time1 = time.time()
         wm = bpy.context.window_manager
@@ -138,7 +139,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         self.show_message('export done in %.4f sec.' % (time.time() - time1))
         print("----------------------------------------")
-        if self.prefs.get("build_after_export"):
+        if self.prefs.build_after_export:
             self.build_and_notify()
 
         return {'FINISHED'}
@@ -196,21 +197,24 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         return mat_loc @ mat_rot @ mat_sca
 
     @staticmethod
-    def get_material_offset(mtl):
-        coffset = 0
-        for mat in bpy.data.materials:
-            if mtl.name == mat.name:
-                return coffset
-            coffset += 1
-
-        return -1
+    def get_material_id_list(obj):
+        # Create dict of all scene material names and indices, {"Name": id}
+        scene_mat_id = {mat.name: i for i, mat in enumerate(bpy.data.materials)}
+        # Create list of all object's material id (global id)
+        indices = []
+        for mat in obj.data.materials:
+            if mat is not None:
+                indices += float(scene_mat_id[mat.name]),
+            else: # Empty material slots reset to 0
+                indices += float(0),
+        return indices
 
     @staticmethod
     def get_exportables():
         """Get all the objects in the scene"""
         exportables = []
-        # get all the objects of the file
-        for obj in bpy.data.objects:
+        # get all visible objects of the file
+        for obj in bpy.context.view_layer.objects:
             if (obj.type == 'MESH' or obj.type == 'EMPTY') and ('PivotObject' not in obj):
                 is_exportable = True
                 for collection in obj.users_collection:
@@ -316,7 +320,15 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     self.write_wreckfest_wrapper_node(nd, file)
                     is_material_written = True
                     break
-            # if no wreckfest node found, look for principled_bsdf
+            # if no wreckfest node found, look for node group with #export in title.
+            if not is_material_written:
+                for nd in mat.node_tree.nodes:
+                    if nd.type == 'GROUP': 
+                        if "#export" in nd.node_tree.name.lower() or "#export" in nd.label.lower(): # Label or Name
+                            self.write_nodegroup_node(nd, mat, file)
+                            is_material_written = True
+                            break
+            # at last look for principled_bsdf
             if not is_material_written:
                 for nd in mat.node_tree.nodes:
                     if nd.type == 'BSDF_PRINCIPLED':
@@ -369,6 +381,28 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     'ERROR')
                 self.write_texture_node_individual(tex_nodes[tn], 1, file)  # default to slot 1
 
+    def write_nodegroup_node(self, node, mat, file):
+        # Create a list of linked TEX_IMAGE Node
+        tex_nodes = []
+
+        # Go through nodegroup node inputs
+        node_id = -1
+        for sh_in in node.inputs:
+            node_id += 1
+            # WARNING : This can skip texture if people link smtg else than a TEX_IMAGE and/or link multiple things
+            if node_id < 12 and sh_in.is_linked and sh_in.links[0].from_socket.node.type == 'TEX_IMAGE':
+                tn = {}
+                tn["node"] = sh_in.links[0].from_socket.node
+                tn["id"] = node_id
+                tex_nodes += (tn),
+
+        # Write len of linked Tex Nodes
+        file.write(struct.pack('I', len(tex_nodes)))
+
+        # Go through valid texture nodes with their link
+        for tn in tex_nodes:
+            self.write_texture_node_individual(tn["node"], tn["id"], file)
+
     # This method take a  TEX Node in param, and it's slot_id from Princ BSDF to WF dict
 
     def write_texture_node_individual(self, node, slotid, file):
@@ -396,38 +430,43 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_filelen(texc_start_offset, file)
 
     def write_gmesh(self, ob, file):
+        ob_material_id_list = self.get_material_id_list(ob)
         # print('writing mesh for ' + ob.name)
         gmesh_start_offset = self.create_header('GMSH', 0, file)
         bm = bmesh.new()
         # TODO : See to_mesh to use preserve all data layer
         # temp_mesh = ob.to_mesh()
         # bm.from_mesh(temp_mesh)
+        # TODO: Apply modifiers based on: self.prefs.apply_modifiers
         depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=depsgraph, deform=self.prefs.get("apply_modifiers", True)) # NOTE: Deform is deprecated will be removed in Blender 3.0
+        bm.from_object(object=ob, depsgraph=depsgraph) 
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
+        range_uv_layers = range(uv_layers) # Range outside of loop, faster
         file.write(struct.pack('LL', len(bm_tris), uv_layers))
         for tri in bm_tris:
             mat_index = 0
             try:
-                mat_index = float(self.get_material_offset(ob.data.materials[tri[0].face.material_index]))
+                mat_index = ob_material_id_list[tri[0].face.material_index] # Local material id to scene material id
             except Exception:
                 mat_index = 0
 
             for loop in tri[::-1]:
-                file.write(struct.pack('ffff', mat_index, loop.vert.co[0], loop.vert.co[2], loop.vert.co[1]))
-                for uvl in range(uv_layers):
+                vco = loop.vert.co
+                file.write(struct.pack('ffff', mat_index, vco[0], vco[2], vco[1]))
+                for uvl in range_uv_layers:
+                    normal = loop.vert.normal # Access bpy once, faster
                     uv_data = loop[bm.loops.layers.uv[uvl]].uv
-                    c1p = loop.vert.normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
-                    c2p = loop.vert.normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
+                    c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
+                    c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
                     loop_tang = c2p
                     if c1p.length > c2p.length:
                         loop_tang = c1p
-                    loop_binormal = loop.vert.normal.cross(loop_tang)
+                    loop_binormal = normal.cross(loop_tang)
                     file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
                                            uv_data[0], ((uv_data[1] - 1) * -1),
-                                           loop.vert.normal[0], loop.vert.normal[2], loop.vert.normal[1],
+                                           normal[0], normal[2], normal[1],
                                            loop_tang[0], loop_tang[2], loop_tang[1],
                                            loop_binormal[0], loop_binormal[2], loop_binormal[1]))
 
@@ -513,13 +552,17 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     def get_custom_data(obj):
         custom_data = ""
         if 'CustomData' in obj:
-            custom_data = obj['CustomData']
-            custom_data += "\r"
+            custom_data = obj['CustomData'] + "\r\n"
 
         for key, value in obj.items():
             if key.startswith("WF_"):
-                prop_value = bool(value)
-                custom_data += key[3:] + " = " + str(prop_value).lower() + "\r"
+                if value in [1, '1', 'true']: # Boolean is int, Manually typed value is sometimes string.
+                    prop_value = "true"
+                elif value in [0, '0', 'false']:
+                    prop_value = "false"
+                else: # Other text values
+                    prop_value = '"' + str(value).strip('"') + '"'
+                custom_data += key[3:] + " = " + prop_value + "\r\n"
 
         return custom_data
 
@@ -600,7 +643,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
 
     def build_and_notify(self):
-        build_asset_file = self.prefs.get("wf_path") + R"\tools\build_asset.bat"
+        build_asset_file = self.prefs.wf_path + R"\tools\build_asset.bat"
         popen_args = [build_asset_file, self.export_path]
         if os.path.exists(build_asset_file):
             print("Building asset ...")
