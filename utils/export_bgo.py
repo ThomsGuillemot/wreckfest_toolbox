@@ -211,10 +211,12 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
     @staticmethod
     def get_exportables():
-        """Get all the objects in the scene"""
         exportables = []
-        # get all visible objects of the file
-        for obj in bpy.context.view_layer.objects:
+        """Get all the objects in the scene and later on discard them if a collection they belong to end with #exclude
+        This allow the modder to export without having to set everything to visible. 
+        It's really usefull when car modding as most of the time you hide half of the customizable parts. And don't want to have to set them to visible again
+        TODO : Put this in the plug in doc so everyone know"""
+        for obj in bpy.data.objects:
             if (obj.type == 'MESH' or obj.type == 'EMPTY') and ('PivotObject' not in obj):
                 is_exportable = True
                 for collection in obj.users_collection:

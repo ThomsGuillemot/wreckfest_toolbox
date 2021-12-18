@@ -1,62 +1,19 @@
 import bpy
-from wreckfest_toolbox.utils.wreckfest_custom_parts_properties import CustomPartsProperties
 
-class WFTB_OT_use_custom_parts(bpy.types.Operator):
-    bl_idname = "wftb.use_custom_parts"
-    bl_label = "Use Wreckfest Custom Parts"
-    bl_description = "Car Mod Oriented Tool" \
-                     "Add the Wreckfest Custom Part objects in the defined collection." \
-                     "If no collection is defined, a new collection will be created." \
-                     "The collection will be splitted in sub collection nammed part#nameOfThePart" \
-                     "Where the name of the part is defined from the object name"
-    bl_options = {"UNDO_GROUPED"}
-
-    def execute(self, context):
-        # Get or create the the custom part properties
-        CustomPartsProperties.register_custom_parts_properties(context)
-
-        # Check if the scene already have a collection with the good name
-        # custom_part_properties.custom_part_collection = CustomPartsProperties.get_or_create_collection(
-        #     custom_part_properties.collection_name)
-        # bpy.ops.wftb.refresh_custom_part_manager()
-        return {'FINISHED'}
-
-
-class WFTB_OT_refresh_custom_parts_manager(bpy.types.Operator):
-    bl_idname = "wftb.refresh_custom_part_manager"
-    bl_label = "Refresh Custom Parts"
-
-    def execute(self, context):
-        # Check if custom parts property was initialized
-        if not CustomPartsProperties.is_custom_parts_properties_valid(context):
-            return {'CANCELLED'}
-        # Fetch the custom Parts
-        self.__update_custom_parts_collection(CustomPartsProperties.fetch_custom_parts(), context)
-        return {'FINISHED'}
-
-    @staticmethod
-    # Manage the collections
-    def __update_custom_parts_collection(custom_parts, context):
-        # Create a collection if it don't exist
-        custom_parts_collection = context.scene.wftb_custom_parts_properties.custom_parts_collection
-        for part_name, parts in custom_parts.items():
-            # Check if the collection exist
-            collection_name = 'part#' + part_name
-            part_collection = CustomPartsProperties.get_or_create_collection(collection_name, custom_parts_collection)
-            for part in parts:
-                if part.name not in part_collection.objects:
-                    part_collection.objects.link(part)
+from wreckfest_toolbox.utils.wreckfest_custom_parts import format_custom_part_name, get_custom_part_name_and_number, get_related_custom_parts
 
 
 class WFTB_OT_set_custom_part(bpy.types.Operator):
-    """Change the name of selected object to become a custom part"""
+    """Change the name of the active object to become a custom part
+    If a custom part already exist, it will adjust the id of the part
+    ex : Selected hood -> if a part already named hood#part_0 the selected one will become hood#part1"""
     bl_idname = "wftb.set_custom_part"
     bl_label = "Set Custom Part"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):
-        if bpy.context.selected_objects is None:
+        if bpy.context.active_object is None:
             return False
 
         return True
@@ -64,37 +21,59 @@ class WFTB_OT_set_custom_part(bpy.types.Operator):
     def execute(self, context):
         # Rename the object with #partxx suffix
         prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
-        # Refresh the custom parts
+        # Get the possible custom parts
+        current_object = bpy.context.active_object
+        related_custom_parts = get_related_custom_parts(current_object.name)
+        # Generate the index of the part by getting the last index of related parts
+        part_index = 0
+        for custom_part in related_custom_parts:
+            index = get_custom_part_name_and_number(custom_part.name)[1] + 1
+            if index > part_index :
+                part_index = index
+
+        current_object.name = format_custom_part_name(current_object.name, str(part_index))
 
         return {'FINISHED'}
 
 
-class WFTB_OT_swith_custom_part(bpy.types.Operator):
-    """Show the Custom part that have this number, and hide the other related parts"""
-    bl_idname = "wftb.switch_custom_part"
-    bl_label = "Switch Custom Part"
+class WFTB_OT_swith_custom_part_visibility(bpy.types.Operator):
+    """Show the Custom part that have this index, and hide the other related parts"""
+    bl_idname = "wftb.swith_custom_part_visibility"
+    bl_label = "Switch Custom Part Visibility"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_property = "custom_part_name"
 
-    custom_part_name: bpy.props.StringProperty(
-        name="Custom Part Name",
-        options={'HIDDEN'}
-    )
+    @classmethod
+    def poll(cls, context):
+        if bpy.context.active_object is None:
+            return False
 
+        #if not a custom part
+        try:
+            get_custom_part_name_and_number(bpy.context.active_object.name)
+        except ValueError:
+            return False
+        
+        return True
+
+    # TODO : Display a menu to select the part number we want to display
     def execute(self, context):
-        custom_parts = CustomPartsProperties.fetch_custom_parts()
-        part_name = CustomPartsProperties.get_custom_part_name(self.custom_part_name)
-        if part_name in custom_parts.keys():
-            for part in custom_parts[part_name]:
-                if part.name in context.view_layer.objects:
-                    part.hide_set(part.name != self.custom_part_name)
-            return {'FINISHED'}
-        elif len(part_name) == 0:
-            for custom_part, parts in custom_parts.items():
-                for part in parts:
-                    if part.name in context.view_layer.objects:
-                        part.hide_set("#part0" not in part.name)
-            return {'FINISHED'}
-        else:
+        # Rename the object with #partxx suffix
+        prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
+        # Get the possible custom parts
+        current_object = bpy.context.active_object
+        #if not a custom part
+        try:
+            get_custom_part_name_and_number(bpy.context.active_object.name)
+        except ValueError:
             return {'CANCELLED'}
 
+        related_custom_parts = get_related_custom_parts(current_object.name)
+
+        for custom_part in related_custom_parts:
+            custom_part.hide_set(True)
+
+        return {'FINISHED'}
+
+# TODO : Add a "Custom Part Cleaner" operator that remove "holes" in custom parts numbers
+
+# TODO : Add a "Sort Custom Part By Collection" operator that sort all the custom parts in sub collections of a #parts collection
