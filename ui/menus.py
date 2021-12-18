@@ -35,9 +35,8 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             # TODO : Implement this
             # row.prop(prefs, "auto_split_edge")
             row = box.row(align=True)
-            # Display the Bake option only if the export path was set before
             # TODO : Check if the path is valid
-            # TODO : Use a string file to avoid typing "wftb_bgo_export_path" every time
+            # Display the Bake option only if the export path was set before
             if context.scene.get("wftb_bgo_export_path"):
                 row.label(text=context.scene.get("wftb_bgo_export_path"))
             row = box.row(align=True)

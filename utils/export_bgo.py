@@ -72,7 +72,7 @@ bpy.types.Scene.wftb_bgo_export_path = bpy.props.StringProperty(
 
 
 class WFTB_OP_export_bgo_with_dialog(bpy.types.Operator, ExportHelper):
-    """Export the visible scene to a BGO File"""
+    """Prompt a dialog to choose where to export the scene to a BGO file"""
     bl_idname = "wftb.export_bgo_with_dialog"
     bl_label = "Export"
 
@@ -93,7 +93,7 @@ class WFTB_OP_export_bgo_with_dialog(bpy.types.Operator, ExportHelper):
 
 
 class WFTB_OP_export_bgo(bpy.types.Operator):
-    """Export the visible scene to a BGO File"""
+    """Export the scene to the previously set BGO File"""
     bl_idname = "wftb.export_bgo"
     bl_label = "Export"
     bl_description = "Export all the objects in the file excepted the ones placed in a collection with #exclude suffix"
@@ -108,8 +108,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.errors = None
 
     def execute(self, context):
-        """The exporter will export every objects,
-         as long as they are not part of any collection that have the suffix #exclude"""
+        """The exporter will query all objects belonging to a "checked" collection, and then will exclude every objects that belong to a collection suffixed with #exclude"""
         self.prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
 
         if not self.export_path:
@@ -122,6 +121,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         if bpy.context.object: # If object with modes active 
             bpy.ops.object.mode_set(mode='OBJECT')
 
+        #Init variables
         time1 = time.time()
         wm = bpy.context.window_manager
         total = 100
@@ -212,11 +212,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     @staticmethod
     def get_exportables():
         exportables = []
-        """Get all the objects in the scene and later on discard them if a collection they belong to end with #exclude
-        This allow the modder to export without having to set everything to visible. 
-        It's really usefull when car modding as most of the time you hide half of the customizable parts. And don't want to have to set them to visible again
-        TODO : Put this in the plug in doc so everyone know"""
-        for obj in bpy.data.objects:
+        """Get all the objects in the view layer. Then exclude objects that belong to a collection ending with #exclude"""
+        for obj in bpy.context.view_layer.objects:
             if (obj.type == 'MESH' or obj.type == 'EMPTY') and ('PivotObject' not in obj):
                 is_exportable = True
                 for collection in obj.users_collection:
@@ -580,7 +577,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         return ''
 
     def write_objects(self, file, bake_animation=True):
-        """Get all the objects that are not in a collection with the suffix #exclude"""
+        """Get all the objects that are in a checked collection, and exclude the objects belonging to a collection with #exclude suffix"""
         hier_start_offset = self.create_header('HIER', 0, file)
         exportables = self.get_exportables()
         file.write(struct.pack('L', len(exportables)))
