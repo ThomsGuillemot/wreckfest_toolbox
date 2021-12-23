@@ -4,7 +4,7 @@ from bpy.utils import register_class, unregister_class
 CLASSES = [
     ("preferences", ["WreckfestToolboxAddonPreference", "WreckfestPanelContext"]),
     ("utils.export_bgo", ["WFTB_OP_export_bgo_with_dialog", "WFTB_OP_export_bgo"]),
-    ("utils.material_node", ["WreckfestWrapperNode", ]),
+    ("utils.material_node", ["WreckfestWrapperNode", "WreckfestGeneralPBRNode"]),
     ("operators.wreckfest_properties_operators", ["WreckfestCustomDataGroup", "WFTB_OT_toggle_wreckfest_custom_data"]),
     ("operators.wreckfest_physical_material_operator", ["WFTB_OT_set_physical_material", ]),
     ("operators.wreckfest_custom_parts_operators", [

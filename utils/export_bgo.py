@@ -287,6 +287,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_filelen(info_start_offset, file)
 
     def write_materials(self, file):
+        """Query And write all the materials of the file"""
         mlst_start_offset = self.create_header('MLST', 0, file)
         file.write(struct.pack('L', len(bpy.data.materials)))
         for mtl in bpy.data.materials:
@@ -331,7 +332,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                             is_material_written = True
                             break
             # at last look for principled_bsdf
-            if not is_material_written:
+            elif not is_material_written:
                 for nd in mat.node_tree.nodes:
                     if nd.type == 'BSDF_PRINCIPLED':
                         self.write_bsdf_node(nd, mat, file)
