@@ -772,7 +772,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
             livery_mask_texture = add_node('ShaderNodeTexImage')
             livery_mask_texture.name = 'Livery Mask'
             livery_mask_texture.image = self.livery_mask
-            link(livery_mask_texture.inputs[0], split_livery_mask.inputs[0])
+            link(livery_mask_texture.outputs[0], split_livery_mask.inputs[0])
 
 
         if self.self_illumination_image is not None:
