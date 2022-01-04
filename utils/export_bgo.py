@@ -296,7 +296,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_cstring(my_username, file)
         self.write_filelen(info_start_offset, file)
 
-    #region Write Materials
+    # region Write Materials
     def write_materials(self, file):
         """Query And write all the materials of the file"""
         mlst_start_offset = self.create_header('MLST', 0, file)
@@ -306,9 +306,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         self.write_filelen(mlst_start_offset, file)
 
-
     def write_material_individual(self, mat, file):
-
         """Write a material in the file"""
         matc_start_offset = self.create_header('MATC', 0, file)
         file.write(bytes('\x00' * 32, 'utf-8'))
@@ -330,6 +328,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         is_material_written = False
         if mat.node_tree is not None:
+            # TODO : Get the node that is pluged-in the material output node
+            # So we are sure to export the visible material
+
             # Find the wreckfest node
             for nd in mat.node_tree.nodes:
                 if nd.bl_idname.startswith("Wreckfest"):
@@ -359,12 +360,13 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         self.write_filelen(matc_start_offset, file)
 
-    #endregion
+    # endregion
 
-    #region Write Shader Nodes
+    # region Write Shader Nodes
 
-    def write_wreckfest_shader_node(self, node, file):
+    def write_wreckfest_shader_node(self, node:bpy.types.ShaderNodeCustomGroup, file):
         """For each WF slot, look if a texture was registered, if yes, write it"""
+        # print("Start Writing : " + node.bl_idname)
         texture_paths = {}
         for key in wf_slots:
             node_prop = node.get(key)
@@ -373,12 +375,15 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     bpy.path.abspath(node_prop.filepath))
                 texture_path = self.get_relative_texpath(absolute_texture_path)
                 texture_paths[wf_slots[key]] = texture_path
+            
 
         file.write(struct.pack('I', len(texture_paths)))
 
+        # print(texture_paths)
         for slot in texture_paths:
             self.write_texture_individual(slot, texture_paths[slot], file)
-
+        
+        # print("End of writing " + node.bl_idname + "\n\n")
 
     def write_bsdf_node(self, node, mat, file):
         # Create a dictionary of linked TEX_IMAGE Node (Shader input : TEX_Node)
@@ -427,9 +432,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         for tn in tex_nodes:
             self.write_texture_node_individual(tn["node"], tn["id"], file)
 
-    #endregion
+    # endregion
 
-    #region Write Texture Nodes
+    # region Write Texture Nodes
     # This method take a  TEX Node in param, and it's slot_id from Princ BSDF to WF dict
 
     def write_texture_node_individual(self, node, slotid, file):
@@ -448,6 +453,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_texture_individual(slotid, texture_path, file)
 
     def write_texture_individual(self, slotid, texture_path, file):
+        # print("Write : " + texture_path + " in slot " + str(slotid))
         texc_start_offset = self.create_header('TEXC', 0, file)
         file.write(struct.pack('III', slotid, 1, 0))
         file.write(struct.pack('ffff', 1, 0, 0, 0))
@@ -457,7 +463,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_cstring(texture_path, file)
         self.write_filelen(texc_start_offset, file)
 
-    #endregion
+    # endregion
 
     def write_gmesh(self, ob, file):
         ob_material_id_list = self.get_material_id_list(ob)
