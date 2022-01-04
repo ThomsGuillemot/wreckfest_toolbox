@@ -660,7 +660,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         # endregion
 
     def __nodetree_setup__(self):
-
+        
         # region Clear
 
         # Clear all the links
@@ -672,13 +672,15 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
                 self.node_tree.nodes.remove(node)
         # endregion
 
-        # region"Node Creation">
+        # region"Node Creation & Links"
+
         input_node = self.node_tree.nodes['Group Input']
         output_node = self.node_tree.nodes['Group Output']
 
         # Create function shortcuts
         add_node = self.node_tree.nodes.new
         link = self.node_tree.links.new
+        g_input = self.inputs.get
 
         # BSDF Shader node
         bsdf = add_node('ShaderNodeBsdfPrincipled')
@@ -692,13 +694,17 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         # Split Ambiant Occlusion node
         split_ao = add_node('ShaderNodeSeparateRGB')
         split_ao.name = 'Split AO'
+        split_ao.inputs[0].default_value=[1, 1, 1, 1]
         split_ao.location = (200, -300)
 
         # Mix Base Color with AO
         mix_ao_bc = add_node('ShaderNodeMixRGB')
         mix_ao_bc.name = 'Mix Albedo with AO'
         mix_ao_bc.blend_type = 'DARKEN'
+        mix_ao_bc.inputs[0].default_value=1
         mix_ao_bc.location = (400, 0)
+        link(split_ao.outputs['G'], mix_ao_bc.inputs['Color2'])
+        link(mix_ao_bc.outputs[0], bsdf.inputs['Base Color'])
 
         # Normal Map Node
         normal_map = add_node('ShaderNodeNormalMap')
@@ -707,31 +713,45 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         # Livery System
         split_livery_mask = add_node('ShaderNodeSeparateRGB')
         split_livery_mask.name = 'Split Livery Mask'
+        split_livery_mask.inputs[0].default_value=[0, 0, 0, 1]
         split_livery_mask.location = (200, 100)
 
         # Livery Color Mix
         mix_livery_1 = add_node('ShaderNodeMixRGB')
         mix_livery_1.name = 'Mix Livery Main and Color 1'
+        mix_livery_1.blend_type = 'MIX'
         mix_livery_1.location = (200, 200)
-        
+        link(split_livery_mask.outputs['R'], mix_livery_1.inputs['Fac'])
+        link(input_node.outputs['LiveryMainColor'], mix_livery_1.inputs['Color1'])
+        link(input_node.outputs['LiveryPrimaryColor'], mix_livery_1.inputs['Color2'])
         
         mix_livery_2 = add_node('ShaderNodeMixRGB')
         mix_livery_2.name = 'Mix Livery result and Color 2'
+        mix_livery_2.blend_type = 'MIX'
         mix_livery_2.location = (200, 300)
+        link(split_livery_mask.outputs['G'], mix_livery_2.inputs['Fac'])
+        link(mix_livery_1.outputs[0], mix_livery_2.inputs['Color1'])
+        link(input_node.outputs['LiverySecondaryColor'], mix_livery_2.inputs['Color2'])
         
         mix_livery_3 = add_node('ShaderNodeMixRGB')
         mix_livery_3.name = 'Mix Livery result and Color 3'
+        mix_livery_3.blend_type = 'MIX'
         mix_livery_3.location = (200, 400)
+        link(split_livery_mask.outputs[2], mix_livery_3.inputs['Fac'])
+        link(mix_livery_2.outputs[0], mix_livery_3.inputs['Color1'])
+        link(input_node.outputs['LiveryTertiaryColor'], mix_livery_3.inputs['Color2'])
         
+        #Livery & Skin Mix
         mix_livery_skin = add_node('ShaderNodeMixRGB')
         mix_livery_skin.name = 'Mix Livery Main and Skin'
+        mix_livery_skin.blend_type = 'MIX'
         mix_livery_skin.location = (200, 500)
-
+        link(mix_livery_3.outputs[0], mix_livery_skin.inputs['Color1'])
+        link(mix_livery_skin.outputs[0], mix_ao_bc.inputs['Color1'])
+    
         # endregion
 
-        # region Links
-
-        # Create Links
+        # region Image & Links
 
         # Create Texture Nodes
         if self.ao_image is not None:
@@ -739,7 +759,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
             ao_texture.name = 'AO Texture'
             ao_texture.image = self.ao_image
             link(ao_texture.outputs[0], split_ao.inputs[0])
-            link(split_ao.outputs['G'], mix_ao_bc.inputs['Color2'])
+            
 
         if self.base_color_image is not None:
             base_color_texture = add_node('ShaderNodeTexImage')
@@ -747,11 +767,6 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
             base_color_texture.image = self.base_color_image
             link(base_color_texture.outputs[0], mix_livery_skin.inputs['Color2'])
             link(base_color_texture.outputs[1], mix_livery_skin.inputs['Fac'])
-            link(mix_livery_skin.outputs[0], mix_ao_bc.inputs['Color1'])
-            if self.ao_image is not None:
-                link(mix_ao_bc.outputs[0], bsdf.inputs['Base Color'])
-            else:
-                link(mix_livery_skin.outputs[0], bsdf.inputs['Base Color'])
                 
         if self.livery_mask is not None:
             livery_mask_texture = add_node('ShaderNodeTexImage')
@@ -782,23 +797,6 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
             link(split_mrs.outputs[0], bsdf.inputs['Metallic'])
             link(split_mrs.outputs[1], bsdf.inputs['Roughness'])
             link(split_mrs.outputs[2], bsdf.inputs['Specular Tint'])
-
-
-
-        #region LINKS 
-        link(split_livery_mask.outputs[0], mix_livery_1.inputs['Fac'])
-        link(input_node.outputs['LiveryMainColor'], mix_livery_1.inputs['Color1'])
-        link(input_node.outputs['LiveryPrimaryColor'], mix_livery_1.inputs['Color2'])
-
-        link(split_livery_mask.outputs[1], mix_livery_2.inputs['Fac'])
-        link(mix_livery_1.outputs[0], mix_livery_2.inputs['Color1'])
-        link(input_node.outputs['LiverySecondaryColor'], mix_livery_2.inputs['Color2'])
-
-        link(split_livery_mask.outputs[2], mix_livery_3.inputs['Fac'])
-        link(mix_livery_2.outputs[0], mix_livery_3.inputs['Color1'])
-        link(input_node.outputs['LiveryTertiaryColor'], mix_livery_3.inputs['Color2'])
-
-        link(mix_livery_3.outputs[0], mix_livery_skin.inputs['Color1'])
 
         # -outputs
         link(bsdf.outputs[0], output_node.inputs[0])
