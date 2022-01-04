@@ -65,7 +65,7 @@ def register():
 
     registration.register_menus()
     # Register Wrapper Node
-    newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Wreckfest", items=[NodeItem("WreckfestWrapperNode"), ]), ]
+    newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Wreckfest", items=[NodeItem("WreckfestWrapperNode"), NodeItem("WreckfestGeneralPBRNode"), NodeItem("WreckfestCarBodyNode")]), ]
     register_node_categories("CUSTOM_NODES", newcatlist)
     addons.register()
 

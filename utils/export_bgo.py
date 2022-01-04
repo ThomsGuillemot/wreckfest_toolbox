@@ -37,6 +37,7 @@ wf_slots = {
     'refraction_image': 10,
     'displacement_image': 11
 }
+
 wf_bsdf_slots = {
     # Ambiant Oclusion
     'Transmission': 0,
@@ -72,7 +73,7 @@ bpy.types.Scene.wftb_bgo_export_path = bpy.props.StringProperty(
 
 
 class WFTB_OP_export_bgo_with_dialog(bpy.types.Operator, ExportHelper):
-    """Prompt a dialog to choose where to export the scene to a BGO file"""
+    """Export the visible scene to a BGO File"""
     bl_idname = "wftb.export_bgo_with_dialog"
     bl_label = "Export"
 
@@ -93,7 +94,7 @@ class WFTB_OP_export_bgo_with_dialog(bpy.types.Operator, ExportHelper):
 
 
 class WFTB_OP_export_bgo(bpy.types.Operator):
-    """Export the scene to the previously set BGO File"""
+    """Export the visible scene to a BGO File"""
     bl_idname = "wftb.export_bgo"
     bl_label = "Export"
     bl_description = "Export all the objects in the file excepted the ones placed in a collection with #exclude suffix"
@@ -108,7 +109,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.errors = None
 
     def execute(self, context):
-        """The exporter will query all objects belonging to a "checked" collection, and then will exclude every objects that belong to a collection suffixed with #exclude"""
+        """The exporter will export every objects,
+         as long as they are not part of any collection that have the suffix #exclude"""
         self.prefs = bpy.context.preferences.addons["wreckfest_toolbox"].preferences
 
         if not self.export_path:
@@ -118,16 +120,15 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         print('exporting BGO: %r...' % self.export_path)
 
         # Force object mode
-        if bpy.context.object: # If object with modes active 
+        if bpy.context.object:  # If object with modes active
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        #Init variables
         time1 = time.time()
         wm = bpy.context.window_manager
         total = 100
         wm.progress_begin(0, total)
         with open(self.export_path, 'wb') as file:
-            file.write(struct.pack('I', 0)) # File length
+            file.write(struct.pack('I', 0))  # File length
             file.write(bytes('MAIN', 'utf-8'))
             print("Write Info ...")
             self.write_info(file)
@@ -135,7 +136,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             self.write_materials(file)
             print("Write Objects ...")
             self.write_objects(file)
-            self.write_filelen(0, file) # Rewrite file length at the beginning
+            self.write_filelen(0, file)  # Rewrite file length at the beginning
 
         self.show_message('export done in %.4f sec.' % (time.time() - time1))
         print("----------------------------------------")
@@ -148,7 +149,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         def draw(self, context):
             self.layout.label(text=message)
 
-        bpy.context.window_manager.popup_menu(draw, title='BGO Exporter', icon=message_type)
+        bpy.context.window_manager.popup_menu(
+            draw, title='BGO Exporter', icon=message_type)
         print(message_type, " : ", message)
 
     @staticmethod
@@ -178,7 +180,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     @staticmethod
     def reorder_objects(lst, pred):
         return_list = [
-                          None] * len(pred)
+            None] * len(pred)
         for v in lst:
             try:
                 return_list[pred.index(v.name)] = v
@@ -199,21 +201,25 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
     @staticmethod
     def get_material_id_list(obj):
         # Create dict of all scene material names and indices, {"Name": id}
-        scene_mat_id = {mat.name: i for i, mat in enumerate(bpy.data.materials)}
+        scene_mat_id = {mat.name: i for i,
+                        mat in enumerate(bpy.data.materials)}
         # Create list of all object's material id (global id)
         indices = []
         for mat in obj.data.materials:
             if mat is not None:
                 indices += float(scene_mat_id[mat.name]),
-            else: # Empty material slots reset to 0
+            else:  # Empty material slots reset to 0
                 indices += float(0),
         return indices
 
     @staticmethod
     def get_exportables():
         exportables = []
-        """Get all the objects in the view layer. Then exclude objects that belong to a collection ending with #exclude"""
-        for obj in bpy.context.view_layer.objects:
+        """Get all the objects in the scene and later on discard them if a collection they belong to end with #exclude
+        This allow the modder to export without having to set everything to visible.
+        It's really usefull when car modding as most of the time you hide half of the customizable parts. And don't want to have to set them to visible again
+        TODO : Put this in the plug in doc so everyone know"""
+        for obj in bpy.data.objects:
             if (obj.type == 'MESH' or obj.type == 'EMPTY') and ('PivotObject' not in obj):
                 is_exportable = True
                 for collection in obj.users_collection:
@@ -241,17 +247,24 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             lx -= sub_vector[0]
             ly -= sub_vector[2]
             lz -= sub_vector[1]
-        file.write(struct.pack('ffff', matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]))
-        file.write(struct.pack('ffff', matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1]))
-        file.write(struct.pack('ffff', matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2]))
+        file.write(struct.pack(
+            'ffff', matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]))
+        file.write(struct.pack(
+            'ffff', matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1]))
+        file.write(struct.pack(
+            'ffff', matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2]))
         file.write(struct.pack('ffff', lx, ly, lz, matrix[3][3]))
 
     @staticmethod
     def write_flipped_matrix(matrix, file):  # Matrix with Y and Z swapped
-        file.write(struct.pack('ffff', matrix[0][0], matrix[2][0], matrix[1][0], matrix[3][0]))
-        file.write(struct.pack('ffff', matrix[0][2], matrix[2][2], matrix[1][2], matrix[3][2]))
-        file.write(struct.pack('ffff', matrix[0][1], matrix[2][1], matrix[1][1], matrix[3][1]))
-        file.write(struct.pack('ffff', matrix[0][3], matrix[2][3], matrix[1][3], matrix[3][3]))
+        file.write(struct.pack(
+            'ffff', matrix[0][0], matrix[2][0], matrix[1][0], matrix[3][0]))
+        file.write(struct.pack(
+            'ffff', matrix[0][2], matrix[2][2], matrix[1][2], matrix[3][2]))
+        file.write(struct.pack(
+            'ffff', matrix[0][1], matrix[2][1], matrix[1][1], matrix[3][1]))
+        file.write(struct.pack(
+            'ffff', matrix[0][3], matrix[2][3], matrix[1][3], matrix[3][3]))
 
     @staticmethod
     def write_filelen(offset, file, additional_adding=0):
@@ -283,7 +296,9 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_cstring(my_username, file)
         self.write_filelen(info_start_offset, file)
 
+    # region Write Materials
     def write_materials(self, file):
+        """Query And write all the materials of the file"""
         mlst_start_offset = self.create_header('MLST', 0, file)
         file.write(struct.pack('L', len(bpy.data.materials)))
         for mtl in bpy.data.materials:
@@ -313,22 +328,26 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         is_material_written = False
         if mat.node_tree is not None:
+            # TODO : Get the node that is pluged-in the material output node
+            # So we are sure to export the visible material
+
             # Find the wreckfest node
             for nd in mat.node_tree.nodes:
-                if nd.name == 'Wreckfest Wrapper':
-                    self.write_wreckfest_wrapper_node(nd, file)
+                if nd.bl_idname.startswith("Wreckfest"):
+                    self.write_wreckfest_shader_node(nd, file)
                     is_material_written = True
                     break
+
             # if no wreckfest node found, look for node group with #export in title.
             if not is_material_written:
                 for nd in mat.node_tree.nodes:
-                    if nd.type == 'GROUP': 
-                        if "#export" in nd.node_tree.name.lower() or "#export" in nd.label.lower(): # Label or Name
+                    if nd.type == 'GROUP':
+                        if "#export" in nd.node_tree.name.lower() or "#export" in nd.label.lower():  # Label or Name
                             self.write_nodegroup_node(nd, mat, file)
                             is_material_written = True
                             break
             # at last look for principled_bsdf
-            if not is_material_written:
+            elif not is_material_written:
                 for nd in mat.node_tree.nodes:
                     if nd.type == 'BSDF_PRINCIPLED':
                         self.write_bsdf_node(nd, mat, file)
@@ -341,20 +360,30 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         self.write_filelen(matc_start_offset, file)
 
-    def write_wreckfest_wrapper_node(self, node, file):
+    # endregion
+
+    # region Write Shader Nodes
+
+    def write_wreckfest_shader_node(self, node:bpy.types.ShaderNodeCustomGroup, file):
         """For each WF slot, look if a texture was registered, if yes, write it"""
+        # print("Start Writing : " + node.bl_idname)
         texture_paths = {}
         for key in wf_slots:
-            image = node.get(key)
-            if type(image) is bpy.types.Image:
-                absolute_texture_path = os.path.abspath(bpy.path.abspath(image.filepath))
+            node_prop = node.get(key)
+            if type(node_prop) is bpy.types.Image:
+                absolute_texture_path = os.path.abspath(
+                    bpy.path.abspath(node_prop.filepath))
                 texture_path = self.get_relative_texpath(absolute_texture_path)
                 texture_paths[wf_slots[key]] = texture_path
+            
 
         file.write(struct.pack('I', len(texture_paths)))
 
+        # print(texture_paths)
         for slot in texture_paths:
             self.write_texture_individual(slot, texture_paths[slot], file)
+        
+        # print("End of writing " + node.bl_idname + "\n\n")
 
     def write_bsdf_node(self, node, mat, file):
         # Create a dictionary of linked TEX_IMAGE Node (Shader input : TEX_Node)
@@ -373,17 +402,18 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         # Go through registered texture nodes with their link
         for tn in tex_nodes:
             try:
-                self.write_texture_node_individual(tex_nodes[tn], wf_bsdf_slots[tn], file)
+                self.write_texture_node_individual(
+                    tex_nodes[tn], wf_bsdf_slots[tn], file)
             except KeyError:
                 self.show_message(
                     'Texture in incorrect slot "' + tn + '" in material: "' + mat.name + '"',
                     'ERROR')
-                self.write_texture_node_individual(tex_nodes[tn], 1, file)  # default to slot 1
+                self.write_texture_node_individual(
+                    tex_nodes[tn], 1, file)  # default to slot 1
 
     def write_nodegroup_node(self, node, mat, file):
         # Create a list of linked TEX_IMAGE Node
         tex_nodes = []
-
         # Go through nodegroup node inputs
         node_id = -1
         for sh_in in node.inputs:
@@ -402,23 +432,28 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         for tn in tex_nodes:
             self.write_texture_node_individual(tn["node"], tn["id"], file)
 
+    # endregion
+
+    # region Write Texture Nodes
     # This method take a  TEX Node in param, and it's slot_id from Princ BSDF to WF dict
 
     def write_texture_node_individual(self, node, slotid, file):
         texture_path = None
         if node.image is not None and node.image.filepath is not None:
             # Get the image Path
-            absolute_texture_path = os.path.abspath(bpy.path.abspath(node.image.filepath))
+            absolute_texture_path = os.path.abspath(
+                bpy.path.abspath(node.image.filepath))
             texture_path = self.get_relative_texpath(absolute_texture_path)
         if texture_path is None:
             texture_path = 'data/art/textures/tmp_red_c.tga'
         # Rename unsupported formats to bypass build_asset checks. PNG should be removed from here once it's officially supported.
-        if texture_path[-4:].lower() in ['.png','.jpg']: 
+        if texture_path[-4:].lower() in ['.png', '.jpg']:
             texture_path = texture_path[:-4] + '.tga'
 
         self.write_texture_individual(slotid, texture_path, file)
 
     def write_texture_individual(self, slotid, texture_path, file):
+        # print("Write : " + texture_path + " in slot " + str(slotid))
         texc_start_offset = self.create_header('TEXC', 0, file)
         file.write(struct.pack('III', slotid, 1, 0))
         file.write(struct.pack('ffff', 1, 0, 0, 0))
@@ -427,6 +462,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         file.write(struct.pack('ffff', 0, 0, 0, 1))
         self.write_cstring(texture_path, file)
         self.write_filelen(texc_start_offset, file)
+
+    # endregion
 
     def write_gmesh(self, ob, file):
         ob_material_id_list = self.get_material_id_list(ob)
@@ -438,24 +475,26 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         # bm.from_mesh(temp_mesh)
         # TODO: Apply modifiers based on: self.prefs.apply_modifiers
         depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=depsgraph) 
+        bm.from_object(object=ob, depsgraph=depsgraph)
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
-        range_uv_layers = range(uv_layers) # Range outside of loop, faster
+        range_uv_layers = range(uv_layers)  # Range outside of loop, faster
         file.write(struct.pack('LL', len(bm_tris), uv_layers))
         for tri in bm_tris:
             mat_index = 0
             try:
-                mat_index = ob_material_id_list[tri[0].face.material_index] # Local material id to scene material id
+                # Local material id to scene material id
+                mat_index = ob_material_id_list[tri[0].face.material_index]
             except Exception:
                 mat_index = 0
 
             for loop in tri[::-1]:
                 vco = loop.vert.co
-                file.write(struct.pack('ffff', mat_index, vco[0], vco[2], vco[1]))
+                file.write(struct.pack(
+                    'ffff', mat_index, vco[0], vco[2], vco[1]))
                 for uvl in range_uv_layers:
-                    normal = loop.vert.normal # Access bpy once, faster
+                    normal = loop.vert.normal  # Access bpy once, faster
                     uv_data = loop[bm.loops.layers.uv[uvl]].uv
                     c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
                     c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
@@ -474,59 +513,74 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         self.write_filelen(gmesh_start_offset, file, -8)
 
     @staticmethod
-    def get_keyframes(obj): # Get every keyframe. Subframes return as decimals.
+    # Get every keyframe. Subframes return as decimals.
+    def get_keyframes(obj):
         keyframes = []
         if obj.animation_data is not None and obj.animation_data.action is not None:
             for fcu in obj.animation_data.action.fcurves:
                 for keyframe in fcu.keyframe_points:
-                    keyframes.append(keyframe.co.x) #co.x = time
-        return sorted(set(keyframes)) #remove doubles and order
+                    keyframes.append(keyframe.co.x)  # co.x = time
+        return sorted(set(keyframes))  # remove doubles and order
 
     @staticmethod
     def write_animations(self, file, exportables, objects_id_dictionary, bake_animation=False):
-        second = 4800 # length of second (3dsMax internal unit)
-        fps = round(bpy.context.scene.render.fps / bpy.context.scene.render.fps_base)
+        second = 4800  # length of second (3dsMax internal unit)
+        fps = round(bpy.context.scene.render.fps /
+                    bpy.context.scene.render.fps_base)
         firstFrameTime = round(bpy.context.scene.frame_start / fps * second)
         lastFrameTime = round(bpy.context.scene.frame_end / fps * second)
 
         # Write animation Info header
         anfo_offset = self.create_header('ANFO', 0, file)
-        file.write(struct.pack('5I', second, firstFrameTime, fps, 0, lastFrameTime)) 
+        file.write(struct.pack(
+            '5I', second, firstFrameTime, fps, 0, lastFrameTime))
         file.write(struct.pack('8I', 0, 0, 0, 0, 0, 0, 0, 0))
 
-        frame_before = bpy.context.scene.frame_current #backup frame selection
+        frame_before = bpy.context.scene.frame_current  # backup frame selection
         for obj in exportables:
             if obj.animation_data is not None and obj.animation_data.action is not None:
-                if self.find_object_type(obj) == 'OBJM':    
+                if self.find_object_type(obj) == 'OBJM':
                     anim_offset = self.create_header('ANIM', 0, file)
-                    file.write(struct.pack('L', objects_id_dictionary[obj.name])) #Object ID (reference to mesh)
+                    # Object ID (reference to mesh)
+                    file.write(struct.pack(
+                        'L', objects_id_dictionary[obj.name]))
                     asmp_offset = self.create_header('ASMP', 0, file)
 
-                    keys = self.get_keyframes(obj) # Get every keyframe number
-                    
-                    if(bake_animation): # 1 Keyframe every Blender frame
+                    keys = self.get_keyframes(obj)  # Get every keyframe number
+
+                    if(bake_animation):  # 1 Keyframe every Blender frame
                         firstFrame = round(keys[0])
                         lastFrame = round(keys[-1])
-                        file.write(struct.pack('I', lastFrame-firstFrame+1)) #Number of keyframes
+                        # Number of keyframes
+                        file.write(struct.pack('I', lastFrame-firstFrame+1))
                         for frame in range(firstFrame, lastFrame+1):
-                            bpy.context.scene.frame_set(frame) #move to frame
-                            wfTime = round((frame - bpy.context.scene.frame_start) / fps * second) #time
-                            if(wfTime<0): wfTime = 0 # bugfix for frames before frame_start
-                            file.write(struct.pack('I', wfTime)) 
-                            self.write_flipped_matrix(obj.matrix_local, file) #transform matrix
-                    else: # Original keyframe data
-                        file.write(struct.pack('I', len(keys))) #Number of keyframes
+                            bpy.context.scene.frame_set(frame)  # move to frame
+                            wfTime = round(
+                                (frame - bpy.context.scene.frame_start) / fps * second)  # time
+                            if(wfTime < 0):
+                                wfTime = 0  # bugfix for frames before frame_start
+                            file.write(struct.pack('I', wfTime))
+                            self.write_flipped_matrix(
+                                obj.matrix_local, file)  # transform matrix
+                    else:  # Original keyframe data
+                        # Number of keyframes
+                        file.write(struct.pack('I', len(keys)))
                         for frame in keys:
-                            bpy.context.scene.frame_set(frame=math.floor(frame), subframe=frame%1) #move to frame
-                            wfTime = round((frame - bpy.context.scene.frame_start) / fps * second) #time
-                            if(wfTime<0): wfTime = 0 # bugfix for frames before frame_start
-                            file.write(struct.pack('I', wfTime)) 
-                            self.write_flipped_matrix(obj.matrix_local, file) #transform matrix
+                            bpy.context.scene.frame_set(frame=math.floor(
+                                frame), subframe=frame % 1)  # move to frame
+                            wfTime = round(
+                                (frame - bpy.context.scene.frame_start) / fps * second)  # time
+                            if(wfTime < 0):
+                                wfTime = 0  # bugfix for frames before frame_start
+                            file.write(struct.pack('I', wfTime))
+                            self.write_flipped_matrix(
+                                obj.matrix_local, file)  # transform matrix
 
                     self.write_filelen(asmp_offset, file, 0)
                     self.write_filelen(anim_offset, file, 0)
         self.write_filelen(anfo_offset, file, 0)
-        bpy.context.scene.frame_set(frame_before) #restore original frame selection
+        # restore original frame selection
+        bpy.context.scene.frame_set(frame_before)
 
     @staticmethod
     def find_xref_path(obname, exporting_to_path=""):  # Find xref path from object name
@@ -535,9 +589,12 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         name = name.replace(" ", "")
         name = name.rstrip('1234567890.')  # remove .001 from end
         # replace ob/ and le/ shorts
-        if name[:3].lower() == "ob/": name = "data/art/objects/" + name[3:]
-        if name[:3].lower() == "le/": name = "data/art/levels/" + name[3:]
-        if name[:2].lower() == "//": name = exporting_to_path + name[2:]
+        if name[:3].lower() == "ob/":
+            name = "data/art/objects/" + name[3:]
+        if name[:3].lower() == "le/":
+            name = "data/art/levels/" + name[3:]
+        if name[:2].lower() == "//":
+            name = exporting_to_path + name[2:]
         return name
 
     @staticmethod
@@ -555,11 +612,12 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         for key, value in obj.items():
             if key.startswith("WF_"):
-                if value in [1, '1', 'true']: # Boolean is int, Manually typed value is sometimes string.
+                # Boolean is int, Manually typed value is sometimes string.
+                if value in [1, '1', 'true']:
                     prop_value = "true"
                 elif value in [0, '0', 'false']:
                     prop_value = "false"
-                else: # Other text values
+                else:  # Other text values
                     prop_value = '"' + str(value).strip('"') + '"'
                 custom_data += key[3:] + " = " + prop_value + "\r\n"
 
@@ -577,7 +635,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         return ''
 
     def write_objects(self, file, bake_animation=True):
-        """Get all the objects that are in a checked collection, and exclude the objects belonging to a collection with #exclude suffix"""
+        """Get all the objects that are not in a collection with the suffix #exclude"""
         hier_start_offset = self.create_header('HIER', 0, file)
         exportables = self.get_exportables()
         file.write(struct.pack('L', len(exportables)))
@@ -585,7 +643,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         objects_id_current = 1
         objects_id_mesh = -1
         for obj in exportables:
-            #print('writing object ' + obj.name)
+            # print('writing object ' + obj.name)
             object_type = self.find_object_type(obj)
             if object_type == '':
                 continue
@@ -595,7 +653,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
             objects_id_dictionary[obj.name] = objects_id_current
             object_offset = self.create_header(object_type, 0, file)
             if obj.parent is not None:
-                file.write(struct.pack('I', objects_id_dictionary[obj.parent.name]))
+                file.write(struct.pack(
+                    'I', objects_id_dictionary[obj.parent.name]))
             else:
                 file.write(struct.pack('I', 0))
             file.write(struct.pack('I', 0))
@@ -606,7 +665,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 self.write_matrix(obj.matrix_local, file)
                 # print('using pivot matrix from ' + pivot.target.name + ' for ' + obj.name)
                 self.flip_axes(pivot.target)
-                self.write_matrix(pivot.target.matrix_local, file, obj.location)
+                self.write_matrix(pivot.target.matrix_local,
+                                  file, obj.location)
                 self.flip_axes(pivot.target)
                 self.flip_axes(obj)
             else:  # normal model
@@ -628,18 +688,21 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 file.write(struct.pack('I', objects_id_mesh))
                 self.write_gmesh(obj, file)
             if object_type == 'OBJX':
-                if obj.name.strip().startswith("#xref"): # Xref Subscene (Unofficial)
-                    self.write_cstring(self.find_xref_path(obj.name)[:-5] + '.scn', file)
+                if obj.name.strip().startswith("#xref"):  # Xref Subscene (Unofficial)
+                    self.write_cstring(self.find_xref_path(
+                        obj.name)[:-5] + '.scn', file)
                 else:  # File > link Subscene
-                    apth = os.path.abspath(bpy.path.abspath(obj.data.library.filepath))
-                    self.write_cstring(str(self.get_relative_texpath(apth.replace(".blend", ".ble"))), file)
+                    apth = os.path.abspath(
+                        bpy.path.abspath(obj.data.library.filepath))
+                    self.write_cstring(str(self.get_relative_texpath(
+                        apth.replace(".blend", ".ble"))), file)
             objects_id_current += 1
 
             self.write_filelen(object_offset, file, -8)
             self.write_filelen(hier_start_offset, file, -8)
 
-        self.write_animations(self, file, exportables, objects_id_dictionary, bake_animation)
-
+        self.write_animations(self, file, exportables,
+                              objects_id_dictionary, bake_animation)
 
     def build_and_notify(self):
         build_asset_file = self.prefs.wf_path + R"\tools\build_asset.bat"
@@ -650,4 +713,3 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
     def notify(self):
         print("... Building Done")
-
