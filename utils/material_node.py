@@ -642,14 +642,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         g_input = self.inputs.get
 
         # region Inputs Creation
-        add_input('NodeSocketColor', 'LiveryMainColor')
-        g_input('LiveryMainColor').default_value = [0.8, 0.8, 0.8, 1]
-        add_input('NodeSocketColor', 'LiveryPrimaryColor')
-        g_input('LiveryPrimaryColor').default_value = [0.8, 0.0, 0.0, 1]
-        add_input('NodeSocketColor', 'LiverySecondaryColor')
-        g_input('LiverySecondaryColor').default_value = [0.0, 0.8, 0.0, 1]
-        add_input('NodeSocketColor', 'LiveryTertiaryColor')
-        g_input('LiveryTertiaryColor').default_value = [0.0, 0.0, 0.8, 1]
+        
         # endregion
 
         # region Outputs Creation
@@ -717,13 +710,34 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         split_livery_mask.location = (200, 100)
 
         # Livery Color Mix
+
+        main_color_node = add_node('ShaderNodeRGB')
+        main_color_node.name = 'Main Color'
+        main_color_node.outputs[0].default_value=self.main_color
+        main_color_node.location = (200, 200)
+
+        primary_color_node = add_node('ShaderNodeRGB')
+        primary_color_node.name = 'Primary Color'
+        primary_color_node.outputs[0].default_value=self.primary_color
+        primary_color_node.location = (200, 300)
+
+        secondary_color_node = add_node('ShaderNodeRGB')
+        secondary_color_node.name = 'Primary Color'
+        secondary_color_node.outputs[0].default_value=self.secondary_color
+        secondary_color_node.location = (200, 400)
+
+        tertiary_color_node = add_node('ShaderNodeRGB')
+        tertiary_color_node.name = 'Primary Color'
+        tertiary_color_node.outputs[0].default_value=self.tertiary_color
+        tertiary_color_node.location = (200, 500)
+
         mix_livery_1 = add_node('ShaderNodeMixRGB')
         mix_livery_1.name = 'Mix Livery Main and Color 1'
         mix_livery_1.blend_type = 'MIX'
         mix_livery_1.location = (200, 200)
         link(split_livery_mask.outputs['R'], mix_livery_1.inputs['Fac'])
-        link(input_node.outputs['LiveryMainColor'], mix_livery_1.inputs['Color1'])
-        link(input_node.outputs['LiveryPrimaryColor'], mix_livery_1.inputs['Color2'])
+        link(main_color_node.outputs[0], mix_livery_1.inputs['Color1'])
+        link(primary_color_node.outputs[0], mix_livery_1.inputs['Color2'])
         
         mix_livery_2 = add_node('ShaderNodeMixRGB')
         mix_livery_2.name = 'Mix Livery result and Color 2'
@@ -731,7 +745,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         mix_livery_2.location = (200, 300)
         link(split_livery_mask.outputs['G'], mix_livery_2.inputs['Fac'])
         link(mix_livery_1.outputs[0], mix_livery_2.inputs['Color1'])
-        link(input_node.outputs['LiverySecondaryColor'], mix_livery_2.inputs['Color2'])
+        link(secondary_color_node.outputs[0], mix_livery_2.inputs['Color2'])
         
         mix_livery_3 = add_node('ShaderNodeMixRGB')
         mix_livery_3.name = 'Mix Livery result and Color 3'
@@ -739,7 +753,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         mix_livery_3.location = (200, 400)
         link(split_livery_mask.outputs[2], mix_livery_3.inputs['Fac'])
         link(mix_livery_2.outputs[0], mix_livery_3.inputs['Color1'])
-        link(input_node.outputs['LiveryTertiaryColor'], mix_livery_3.inputs['Color2'])
+        link(tertiary_color_node.outputs[0], mix_livery_3.inputs['Color2'])
         
         #Livery & Skin Mix
         mix_livery_skin = add_node('ShaderNodeMixRGB')
@@ -802,7 +816,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         link(bsdf.outputs[0], output_node.inputs[0])
         # endregion
 
-    def update_images(self, context):
+    def update_properties(self, context):
         self.__nodeinterface_setup__()
         self.__nodetree_setup__()
 
@@ -815,7 +829,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         description = "3ds Max : 1 - Ambient Color\n"
                     "File Suffix : _aoc.tga\n",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
     livery_mask: bpy.props.PointerProperty(
@@ -824,7 +838,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         "Black -> Main Color\nRed -> First Option Color\nGreen -> Second Option Color\nBlue -> Third Option Color"
         "\nThis have no incidence on the export, it's purely for blender preview",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
     base_color_image: bpy.props.PointerProperty(
@@ -832,14 +846,14 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         description = "3ds Max : 2 - Diffuse Color\n"
                     "File Suffix : _c.tga or _c5.tga\n",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
     self_illumination_image: bpy.props.PointerProperty(
         name = "Self Illumination",
         description = "3ds Max : 6 - Self-Illumination",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
     opacity_image: bpy.props.PointerProperty(
@@ -848,7 +862,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
                     "3ds Max : 7 - Opacity\n"
                     "File Suffix : _c.tga",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
     bump_image: bpy.props.PointerProperty(
@@ -856,7 +870,7 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         description = "3ds Max : 9 - Bump\n"
                     "File Suffix : _n.tga",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
     mrs_image: bpy.props.PointerProperty(
@@ -865,9 +879,48 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
                     "3ds Max : 10 - Reflection\n"
                     "File Suffix : _s.tga",
         type = bpy.types.Image,
-        update = update_images
+        update = update_properties
     )
 
+    main_color: bpy.props.FloatVectorProperty(
+        name = "Main Color",
+        description="Correspond to Livery Mask Black\nNo incidence on export",
+        default=[1.0, 1.0, 1.0, 1.0],
+        min=0, max=1,
+        subtype="COLOR",
+        size = 4,
+        update = update_properties
+    )
+
+    primary_color: bpy.props.FloatVectorProperty(
+        name = "Main Color",
+        description="Correspond to Livery Mask Red\nNo incidence on export",
+        default=[.8, 0, 0, 1.0],
+        min=0, max=1,
+        subtype="COLOR",
+        size = 4,
+        update = update_properties
+    )
+
+    secondary_color: bpy.props.FloatVectorProperty(
+        name = "Main Color",
+        description="Correspond to Livery Mask Green\nNo incidence on export",
+        default=[0, .8, 0, 1.0],
+        min=0, max=1,
+        subtype="COLOR",
+        size = 4,
+        update = update_properties
+    )
+
+    tertiary_color: bpy.props.FloatVectorProperty(
+        name = "Main Color",
+        description="Correspond to Livery Mask Blue\nNo incidence on export",
+        default=[0, 0, .8, 1.0],
+        min=0, max=1,
+        subtype="COLOR",
+        size = 4,
+        update = update_properties
+    )
     # endregion
 
     def init(self, context):
@@ -906,6 +959,12 @@ class WreckfestCarBodyNode(bpy.types.ShaderNodeCustomGroup):
         row=layout.row(align = True)
         row.prop(self, "bump_image", text = "")
         row.label(text = "Bump / Normal")
+        row=layout.row(align = True)
+        row.prop(self, "main_color", text = "")
+        row=layout.row(align = True)
+        row.prop(self, "primary_color", text = "")
+        row.prop(self, "secondary_color", text = "")
+        row.prop(self, "tertiary_color", text = "")
 
     def copy(self, node):
         self.node_tree=node.node_tree.copy()
