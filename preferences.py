@@ -74,6 +74,12 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         default=R"\tools\build_asset.bat"
     )
 
+    # Build assets tool path
+    wf_custom_build_asset_path: bpy.props.StringProperty(
+        name="Wreckfest Build Asset Path",
+        default=R"\modding_tools\custom_build_asset.bat"
+    )
+
     wf_physical_material_list: bpy.props.EnumProperty(
         name="Wreckfest Physical Material List",
         items=get_physical_materials,

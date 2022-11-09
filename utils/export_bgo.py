@@ -705,7 +705,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                               objects_id_dictionary, bake_animation)
 
     def build_and_notify(self):
-        build_asset_file = self.prefs.wf_path + R"\tools\build_asset.bat"
+        build_asset_file = bpy.utils.user_resource('SCRIPTS', path="addons\wreckfest_toolbox")+self.prefs.wf_custom_build_asset_path
         popen_args = [build_asset_file, self.export_path]
         if os.path.exists(build_asset_file):
             print("Building asset ...")
