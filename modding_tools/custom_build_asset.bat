@@ -46,8 +46,8 @@ goto :TooltipBalloon
 ::By SachaDee - 2016
 
 @echo off
-set "$Titre=BGO BUILDER"
-Set "$Message=Build BGO done"
+set "$Titre=< %in_filename%%in_extension% > BUILT"
+Set "$Message=File Path : %out_noext%"
 
 ::Pour L'icone valeur possible Information, error, warning, none
 
