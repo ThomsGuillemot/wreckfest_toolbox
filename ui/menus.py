@@ -31,6 +31,9 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             row.label(text="Export :", icon="EXPORT")
             row = box.row(align=True)
             row.prop(prefs, "apply_modifiers")
+            row.prop(prefs, "build_bmap")
+            row = box.row(align=True)
+            #row.prop(prefs, "bake_animation")
             row.prop(prefs, "build_after_export")
             # TODO : Implement this
             # row.prop(prefs, "auto_split_edge")
