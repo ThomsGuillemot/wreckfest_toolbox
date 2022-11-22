@@ -2,7 +2,7 @@
 bl_info = {
     "name": "Wreckfest Modding Toolbox",
     "author": "Dummiesman, TheSpacebarRider, Mazay",
-    "version": (1, 0, 0),
+    "version": (1, 1, 1, 8),
     "blender": (2, 83, 0),
     "location": "Tool Bar",
     "description": "A toolbox that help creating mods for the game Wreckfest",
