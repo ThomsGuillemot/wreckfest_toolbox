@@ -1,13 +1,12 @@
-# Thanks to Secrop for the Shader Node code : https://github.com/Secrop/ShaderNodesExtra2.80
 bl_info = {
-    "name": "Wreckfest Modding Toolbox",
+    "name": "Wreckfest Toolbox Mz",
     "author": "Dummiesman, TheSpacebarRider, Mazay",
-    "version": (1, 1, 1, 8),
-    "blender": (2, 83, 0),
+    "version": (1, 1, 1, 9),
+    "blender": (2, 80, 0),
     "location": "Tool Bar",
     "description": "A toolbox that help creating mods for the game Wreckfest",
-    "warning": "Actually in development",
-    "wiki_url": "https://github.com/ThomsGuillemot/wreckfest-toolbox/wiki",
+    "doc_url": "https://github.com/ThomsGuillemot/wreckfest-toolbox/wiki",
+    "tracker_url": "https://github.com/gmazy/wreckfest_toolbox/issues",
     "support": 'COMMUNITY',
     "category": "3D View"
 }
