@@ -5,7 +5,7 @@ bl_info = {
     "blender": (2, 80, 0),
     "location": "Tool Bar",
     "description": "A toolbox that help creating mods for the game Wreckfest",
-    "doc_url": "https://github.com/ThomsGuillemot/wreckfest-toolbox/wiki",
+    "doc_url": "https://github.com/gmazy/wreckfest_toolbox/wiki",
     "tracker_url": "https://github.com/gmazy/wreckfest_toolbox/issues",
     "support": 'COMMUNITY',
     "category": "3D View"
