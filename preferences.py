@@ -93,16 +93,10 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         items=wreckfest_message_level,
     )
 
-    apply_modifiers: bpy.props.BoolProperty(
-        name="Apply Modifier",
-        default=True,
-        description="Apply modifier to the exported models"
-    )
-
     auto_split_edge: bpy.props.BoolProperty(
         name="Split Edges",
         default=True,
-        description="Add a Split edge modifier for sharp edges (marked) on export"
+        description="Split the edge of the mesh based on the auto smooth angle, if auto smooth is activated"
     )
 
     build_after_export: bpy.props.BoolProperty(
