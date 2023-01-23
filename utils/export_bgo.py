@@ -477,7 +477,6 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
-        
 
         range_uv_layers = range(uv_layers)  # Range outside of loop, faster
         file.write(struct.pack('LL', len(bm_tris), uv_layers))
