@@ -474,8 +474,10 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
         bm.from_object(object=ob, depsgraph=bpy.context.evaluated_depsgraph_get())
         # recalculating normals
         bm.normal_update()
+
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
+        
 
         range_uv_layers = range(uv_layers)  # Range outside of loop, faster
         file.write(struct.pack('LL', len(bm_tris), uv_layers))
@@ -488,12 +490,16 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 mat_index = 0
 
             for loop in tri[::-1]:
-                coordinates = loop.vert.co
+                vco = loop.vert.co
                 file.write(struct.pack(
-                    'ffff', mat_index, coordinates[0], coordinates[2], coordinates[1]))
+                    'ffff', mat_index, vco[0], vco[2], vco[1]))
                 normal = loop.vert.normal  # Access bpy once, faster
-                loop_tang = loop.calc_tangent()
-                loop_binormal = normal.cross(loop_tang)                
+                c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
+                c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
+                loop_tang = c2p
+                if c1p.length > c2p.length:
+                    loop_tang = c1p
+                loop_binormal = normal.cross(loop_tang)
                 for uvl in range_uv_layers:
                     uv_data = loop[bm.loops.layers.uv[uvl]].uv    
                     file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
