@@ -1,7 +1,7 @@
 
 import bpy
 import array
-import collections
+import collections.abc
 from . import blender_scene_tools
 
 
@@ -56,7 +56,7 @@ def format_custom_part_name(obj_name: str, part_index: str) -> str:
 """Return an array with all the blender object 
 that are related to the custom part given in parameter"""
 
-def get_related_custom_parts(part_name: str) -> collections.Iterable[bpy.types.Object]:
+def get_related_custom_parts(part_name: str) -> collections.abc.Iterable[bpy.types.Object]:
     #iterate through every objects and return an array with all the parts in it
     custom_parts = []
     for obj in bpy.context.scene.objects:
@@ -67,7 +67,7 @@ def get_related_custom_parts(part_name: str) -> collections.Iterable[bpy.types.O
     return custom_parts
 
 """Return a sorted array of all the objects that correspond to the custom part"""
-def get_related_custom_parts(part_name: str) -> collections.Iterable[bpy.types.Object]:
+def get_related_custom_parts(part_name: str) -> collections.abc.Iterable[bpy.types.Object]:
     #iterate through every objects and return an array with all the parts in it
     custom_parts = []
     for obj in bpy.context.scene.objects:
