@@ -465,20 +465,19 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
     # endregion
 
-    def write_gmesh(self, ob, file):
+    def write_gmesh(self,ob: bpy.types.Object, file):
         ob_material_id_list = self.get_material_id_list(ob)
         # print('writing mesh for ' + ob.name)
         gmesh_start_offset = self.create_header('GMSH', 0, file)
         bm = bmesh.new()
-        # TODO : See to_mesh to use preserve all data layer
-        # temp_mesh = ob.to_mesh()
-        # bm.from_mesh(temp_mesh)
-        # TODO: Apply modifiers based on: self.prefs.apply_modifiers
-        depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=depsgraph)
+        #depsgraph = bpy.context.view_layer.depsgraph
+        bm.from_object(object=ob, depsgraph=bpy.context.evaluated_depsgraph_get())
+        # recalculating normals
+        bm.normal_update()
 
         bm_tris = bm.calc_loop_triangles()
         uv_layers = len(bm.loops.layers.uv)
+
         range_uv_layers = range(uv_layers)  # Range outside of loop, faster
         file.write(struct.pack('LL', len(bm_tris), uv_layers))
         for tri in bm_tris:
@@ -493,22 +492,22 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 vco = loop.vert.co
                 file.write(struct.pack(
                     'ffff', mat_index, vco[0], vco[2], vco[1]))
+                normal = loop.vert.normal  # Access bpy once, faster
+                c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
+                c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
+                loop_tang = c2p
+                if c1p.length > c2p.length:
+                    loop_tang = c1p
+                loop_binormal = normal.cross(loop_tang)
                 for uvl in range_uv_layers:
-                    normal = loop.vert.normal  # Access bpy once, faster
-                    uv_data = loop[bm.loops.layers.uv[uvl]].uv
-                    c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
-                    c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
-                    loop_tang = c2p
-                    if c1p.length > c2p.length:
-                        loop_tang = c1p
-                    loop_binormal = normal.cross(loop_tang)
+                    uv_data = loop[bm.loops.layers.uv[uvl]].uv    
                     file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
                                            uv_data[0], ((uv_data[1] - 1) * -1),
                                            normal[0], normal[2], normal[1],
                                            loop_tang[0], loop_tang[2], loop_tang[1],
                                            loop_binormal[0], loop_binormal[2], loop_binormal[1]))
 
-        # bpy.data.meshes.remove(temp_mesh) No longer needed
+        
         bm.free()
         self.write_filelen(gmesh_start_offset, file, -8)
 
