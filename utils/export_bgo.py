@@ -8,15 +8,15 @@
 #
 # ##### END MIT LICENSE BLOCK #####
 
-import os
-import time
-import struct
-import bpy
-import bmesh
 import math
+import os
+import struct
+import time
+
+import bmesh
+import bpy
 import mathutils
 from bpy_extras.io_utils import ExportHelper
-
 
 wf_custom_data = {
     "IsCollisionModel",
@@ -364,7 +364,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
     # region Write Shader Nodes
 
-    def write_wreckfest_shader_node(self, node:bpy.types.ShaderNodeCustomGroup, file):
+    def write_wreckfest_shader_node(self, node: bpy.types.ShaderNodeCustomGroup, file):
         """For each WF slot, look if a texture was registered, if yes, write it"""
         # print("Start Writing : " + node.bl_idname)
         texture_paths = {}
@@ -375,14 +375,13 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                     bpy.path.abspath(node_prop.filepath))
                 texture_path = self.get_relative_texpath(absolute_texture_path)
                 texture_paths[wf_slots[key]] = texture_path
-            
 
         file.write(struct.pack('I', len(texture_paths)))
 
         # print(texture_paths)
         for slot in texture_paths:
             self.write_texture_individual(slot, texture_paths[slot], file)
-        
+
         # print("End of writing " + node.bl_idname + "\n\n")
 
     def write_bsdf_node(self, node, mat, file):
@@ -465,50 +464,52 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
     # endregion
 
-    def write_gmesh(self,ob: bpy.types.Object, file):
+    def write_gmesh(self, ob: bpy.types.Object, file):
         ob_material_id_list = self.get_material_id_list(ob)
-        # print('writing mesh for ' + ob.name)
         gmesh_start_offset = self.create_header('GMSH', 0, file)
-        bm = bmesh.new()
-        #depsgraph = bpy.context.view_layer.depsgraph
-        bm.from_object(object=ob, depsgraph=bpy.context.evaluated_depsgraph_get())
-        # recalculating normals
-        bm.normal_update()
 
-        bm_tris = bm.calc_loop_triangles()
-        uv_layers = len(bm.loops.layers.uv)
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        mesh = ob.to_mesh(depsgraph=depsgraph, preserve_all_data_layers=True)
+        mesh.calc_loop_triangles()
+        mesh.calc_normals_split()
+        #mesh.calc_tangents()
+        # Get the triangle loops
+        triangle_loops = mesh.loop_triangles
+        # Get Uv Layers
+        uv_layer_count = len(mesh.uv_layers)
+        range_uv_layers = range(uv_layer_count)
+        file.write(struct.pack('LL', len(triangle_loops), uv_layer_count))
 
-        range_uv_layers = range(uv_layers)  # Range outside of loop, faster
-        file.write(struct.pack('LL', len(bm_tris), uv_layers))
-        for tri in bm_tris:
+        for triangle_loop in triangle_loops:
             mat_index = 0
             try:
-                # Local material id to scene material id
-                mat_index = ob_material_id_list[tri[0].face.material_index]
+                mat_index = ob_material_id_list[triangle_loop.material_index]
             except Exception:
                 mat_index = 0
 
-            for loop in tri[::-1]:
-                vco = loop.vert.co
-                file.write(struct.pack(
-                    'ffff', mat_index, vco[0], vco[2], vco[1]))
-                normal = loop.vert.normal  # Access bpy once, faster
+            # For each vertex of the triangle
+            for mesh_loop_id in reversed(triangle_loop.loops):
+                mesh_loop = mesh.loops[mesh_loop_id]
+                coordinates = mesh.vertices[mesh_loop.vertex_index].co
+                file.write(struct.pack('ffff', mat_index,
+                           coordinates[0], coordinates[2], coordinates[1]))
+                # get the normal
+                normal = mesh_loop.normal
                 c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
                 c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
-                loop_tang = c2p
+                tangent = c2p
                 if c1p.length > c2p.length:
-                    loop_tang = c1p
-                loop_binormal = normal.cross(loop_tang)
+                    tangent = c1p
+                bitangent = normal.cross(tangent)
                 for uvl in range_uv_layers:
-                    uv_data = loop[bm.loops.layers.uv[uvl]].uv    
+                    uv_data = mesh.uv_layers[uvl].data[mesh_loop_id].uv
                     file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
                                            uv_data[0], ((uv_data[1] - 1) * -1),
                                            normal[0], normal[2], normal[1],
-                                           loop_tang[0], loop_tang[2], loop_tang[1],
-                                           loop_binormal[0], loop_binormal[2], loop_binormal[1]))
+                                           tangent[0], tangent[2], tangent[1],
+                                           bitangent[0], bitangent[2], bitangent[1]))
 
-        
-        bm.free()
+        ob.to_mesh_clear()
         self.write_filelen(gmesh_start_offset, file, -8)
 
     @staticmethod
@@ -547,7 +548,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
                     keys = self.get_keyframes(obj)  # Get every keyframe number
 
-                    if(bake_animation):  # 1 Keyframe every Blender frame
+                    if (bake_animation):  # 1 Keyframe every Blender frame
                         firstFrame = round(keys[0])
                         lastFrame = round(keys[-1])
                         # Number of keyframes
@@ -556,7 +557,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                             bpy.context.scene.frame_set(frame)  # move to frame
                             wfTime = round(
                                 (frame - bpy.context.scene.frame_start) / fps * second)  # time
-                            if(wfTime < 0):
+                            if (wfTime < 0):
                                 wfTime = 0  # bugfix for frames before frame_start
                             file.write(struct.pack('I', wfTime))
                             self.write_flipped_matrix(
@@ -569,7 +570,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                                 frame), subframe=frame % 1)  # move to frame
                             wfTime = round(
                                 (frame - bpy.context.scene.frame_start) / fps * second)  # time
-                            if(wfTime < 0):
+                            if (wfTime < 0):
                                 wfTime = 0  # bugfix for frames before frame_start
                             file.write(struct.pack('I', wfTime))
                             self.write_flipped_matrix(
@@ -704,7 +705,8 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                               objects_id_dictionary, bake_animation)
 
     def build_and_notify(self):
-        build_asset_file = bpy.utils.user_resource('SCRIPTS', path="addons\wreckfest_toolbox")+self.prefs.wf_custom_build_asset_path
+        build_asset_file = bpy.utils.user_resource(
+            'SCRIPTS', path="addons\wreckfest_toolbox")+self.prefs.wf_custom_build_asset_path
         popen_args = [build_asset_file, self.export_path]
         if os.path.exists(build_asset_file):
             print("Building asset ...")
