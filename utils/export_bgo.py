@@ -470,13 +470,15 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
         mesh = ob.to_mesh(depsgraph=depsgraph, preserve_all_data_layers=True)
+        mesh.calc_loop_triangles()
         mesh.calc_normals_split()
-        mesh.calc_tangents()
+        #mesh.calc_tangents()
         # Get the triangle loops
         triangle_loops = mesh.loop_triangles
         # Get Uv Layers
-        range_uv_layers = range(mesh.uv_layers)
-        file.write(struct.pack('LL', len(triangle_loops), len(mesh.uv_layers)))
+        uv_layer_count = len(mesh.uv_layers)
+        range_uv_layers = range(uv_layer_count)
+        file.write(struct.pack('LL', len(triangle_loops), uv_layer_count))
 
         for triangle_loop in triangle_loops:
             mat_index = 0
@@ -497,52 +499,18 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
                 tangent = c2p
                 if c1p.length > c2p.length:
-                    loop_tang = c1p
-                loop_binormal = normal.cross(loop_tang)
+                    tangent = c1p
+                bitangent = normal.cross(tangent)
                 for uvl in range_uv_layers:
-                    uv_data = mesh.uv_layers[uvl].data.uv
+                    uv_data = mesh.uv_layers[uvl].data[mesh_loop_id].uv
                     file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
                                            uv_data[0], ((uv_data[1] - 1) * -1),
                                            normal[0], normal[2], normal[1],
-                                           loop_tang[0], loop_tang[2], loop_tang[1],
-                                           loop_binormal[0], loop_binormal[2], loop_binormal[1]))
+                                           tangent[0], tangent[2], tangent[1],
+                                           bitangent[0], bitangent[2], bitangent[1]))
 
         ob.to_mesh_clear()
         self.write_filelen(gmesh_start_offset, file, -8)
-
-        uv_layers = len(bMesh.loops.layers.uv)
-
-        range_uv_layers = range(uv_layers)  # Range outside of loop, faster
-        file.write(struct.pack('LL', len(bm_tris), uv_layers))
-        for triangle in bm_tris:
-            mat_index = 0
-            try:
-                # Local material id to scene material id
-                mat_index = ob_material_id_list[triangle[0].face.material_index]
-            except Exception:
-                mat_index = 0
-
-            for triangle_loop in triangle[::-1]:
-                vco = triangle_loop.vert.co
-                file.write(struct.pack(
-                    'ffff', mat_index, vco[0], vco[2], vco[1]))
-                normal = triangle_loop.vert.normal  # Access bpy once, faster
-                c1p = normal.cross(mathutils.Vector((0.0, 0.0, 1.0)))
-                c2p = normal.cross(mathutils.Vector((0.0, 1.0, 0.0)))
-                loop_tang = c2p
-                if c1p.length > c2p.length:
-                    loop_tang = c1p
-                loop_binormal = normal.cross(loop_tang)
-                for uvl in range_uv_layers:
-                    uv_data = triangle_loop[bMesh.loops.layers.uv[uvl]].uv
-                    file.write(struct.pack('fffffffffff',  # combining struck.pack is faster
-                                           uv_data[0], ((uv_data[1] - 1) * -1),
-                                           normal[0], normal[2], normal[1],
-                                           loop_tang[0], loop_tang[2], loop_tang[1],
-                                           loop_binormal[0], loop_binormal[2], loop_binormal[1]))
-
-        bMesh.free()
-        ob.data.free_normals_split()
 
     @staticmethod
     # Get every keyframe. Subframes return as decimals.
