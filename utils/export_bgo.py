@@ -488,7 +488,7 @@ class WFTB_OP_export_bgo(bpy.types.Operator):
                 mat_index = 0
 
             # For each vertex of the triangle
-            for mesh_loop_id in triangle_loop.loops:
+            for mesh_loop_id in reversed(triangle_loop.loops):
                 mesh_loop = mesh.loops[mesh_loop_id]
                 coordinates = mesh.vertices[mesh_loop.vertex_index].co
                 file.write(struct.pack('ffff', mat_index,
