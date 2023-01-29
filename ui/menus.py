@@ -1,4 +1,5 @@
 import bpy
+from wreckfest_toolbox.utils.wreckfest_custom_parts_properties import CustomPartsProperties
 
 # Create a Wreckfest menu on the right panel of 3D view
 class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
@@ -22,21 +23,47 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
         row.scale_y = 1.5
         row.prop(props, "panel_enums", icon_only=True, expand=True)
 
-        if props.panel_enums == "EXPORT":
+        if props.panel_enums == "CUSTOM_PARTS":
+            row.label(text="Custom Parts")
+
+            # Manage the custom parts
+            box = layout.box()
+            row = box.row(align=True)
+
+            row = box.row(align=True)
+            op = row.operator("wftb.switch_custom_part", text="Show all #parts0")
+            op.custom_part_name = ""
+            custom_parts = CustomPartsProperties.fetch_custom_parts()
+            for custom_part_name, part_objects in custom_parts.items():
+                inner_box = box.box()
+                row = inner_box.row(align=True)
+                op = row.operator("wftb.switch_custom_part", text=custom_part_name + " : Empty", icon="CANCEL")
+                op.custom_part_name = custom_part_name
+                row = inner_box.row(align=True)
+                c = 0
+                for part in part_objects:
+                    op = row.operator("wftb.switch_custom_part", text=str(c))
+                    op.custom_part_name = part.name
+                    c += 1
+                    if ((c) % 5) == 0:
+                        row = inner_box.row(align=True)
+
+        elif props.panel_enums == "EXPORT":
             row.label(text="Export")
 
             # Export
             box = layout.box()
-            row = box.row(align=True)
-            row.label(text="Export :", icon="EXPORT")
-            row = box.row(align=True)
-            row.prop(prefs, "auto_split_edge")
-            row.prop(prefs, "build_after_export")
+            box.label(text="Export :", icon="EXPORT")
+            box.prop(prefs, "apply_modifiers")
+            box.prop(prefs, "bake_animation")
+            box.prop(prefs, "build_bmap")
+            box.prop(prefs, "build_after_export")
             # TODO : Implement this
             # row.prop(prefs, "auto_split_edge")
             row = box.row(align=True)
-            # TODO : Check if the path is valid
             # Display the Bake option only if the export path was set before
+            # TODO : Check if the path is valid
+            # TODO : Use a string file to avoid typing "wftb_bgo_export_path" every time
             if context.scene.get("wftb_bgo_export_path"):
                 row.label(text=context.scene.get("wftb_bgo_export_path"))
             row = box.row(align=True)
@@ -55,6 +82,9 @@ class WFTB_PT_wreckfest_toolbox_panel(bpy.types.Panel):
             row = box.row(align=True)
             row.prop(prefs, 'wf_path')
 
+
+# TODO : Implement
+# row.prop(prefs, 'export_message_level')
 
 class WFTB_PT_wreckfest_material_panel(bpy.types.Panel):
     """Add a Wreckfest menu to the Material Panel"""
@@ -84,5 +114,3 @@ class WFTB_MT_object_context_menu(bpy.types.Menu):
             layout.operator("wftb.toggle_wreckfest_custom_data", icon="MODIFIER")
         if getattr(bpy.types, "WFTB_OT_set_custom_part", False):
             layout.operator("wftb.set_custom_part", icon="PRESET")
-        if(getattr(bpy.types, "WFTB_OT_swith_custom_part_visibility", False)):
-            layout.operator("wftb.swith_custom_part_visibility", icon="HIDE_OFF")
