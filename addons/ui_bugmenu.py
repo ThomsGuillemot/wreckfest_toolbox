@@ -8,7 +8,7 @@
 bl_info = {  
     "name": "Bugmenu",  
     "author": "Mazay",  
-    "version": (0, 1, 1),  
+    "version": (0, 1, 4),  
     "blender": (2, 80, 0),  
     "location": "Topbar",  
     "description": "Adds Bugmenu to topbar.",  
@@ -20,7 +20,10 @@ bl_info = {
 bugmenu_copypaste = ''
 
 import bpy
+import os
 import re
+import sys
+import subprocess
 import bmesh
 import mathutils
 from bpy.props import StringProperty
@@ -49,6 +52,9 @@ class BugMenu(bpy.types.Menu):
         layout.separator()         
         if(op_exist("import_scene.scne")): layout.operator("import_scene.scne", icon='IMPORT')
         if(op_exist("import_scene.scneph")): layout.operator("import_scene.scneph", icon='IMPORT')
+        layout.separator() 
+        layout.operator("bugmenu.runbagedit")
+
         layout.separator() 
         layout.menu(BugMenuRepair.bl_idname)
         layout.separator()
@@ -110,13 +116,16 @@ class BugMenuCdata(bpy.types.Menu):
         layout.operator("object.set_customdata", text='animation_colliding_random_start').value = 'dyn = "data/property/object/animation_colliding_random_start"'
         layout.operator("object.set_customdata", text='ghost').value = 'dyn = "data/property/object/ghost"'
         layout.separator() 
+        layout.label(text="Volume Settings:")
+        layout.operator("object.set_customdata", text='ambient_roaddust_gravel_01').value = 'vol = "data/property/object/ambient_roaddust_gravel_01"'   
+        layout.separator() 
         layout.label(text="Routes:")
         layout.operator("object.set_customdata", text='otherway = true').value = 'otherway = true'
         layout.operator("object.set_customdata", text='crossstart = true').value = 'crossstart = true'
         layout.separator() 
         layout.label(text="Vehicles:")
         layout.operator("object.set_customdata", text='IsCollisionModel = true').value = 'IsCollisionModel = true'   
-        layout.separator() 
+        layout.separator()
         layout.label(text="Copy-Paste:", icon='COPYDOWN')
         layout.operator("object.copy_customdata", text="Copy")
         if(bugmenu_copypaste != ''):
@@ -238,6 +247,42 @@ class BUGMENU_OT_UpdateCustomdata(bpy.types.Operator):
         if (bpy.app.version>=(2,80)): obj.select_set(state=True) #Refresh view
         return {'FINISHED'}
 
+class BUGMENU_OT_RunBagedit(bpy.types.Operator):
+    """Run BagEdit from Wreckfest/BagEdit"""
+    bl_idname = "bugmenu.runbagedit"
+    bl_label = "BagEdit"
+
+    @staticmethod
+    def bagedit_path():
+        return os.path.join(bpy.context.preferences.addons['wreckfest_toolbox'].preferences.wf_path,'BagEdit','BagEditCommunity.exe')
+
+    @staticmethod
+    def scene_path():
+        try:
+            path = bpy.context.scene.wftb_bgo_export_path
+        except:
+            return ''
+        if os.path.isfile(path[:-5]+'.scne'):
+            return path[:-5]+'.scne'
+        if os.path.isfile(path[:-5]+'.vhcl'):
+            return path[:-5]+'.vhcl'
+        return ''
+
+    @classmethod
+    def poll(cls, context):
+        try:
+            if os.path.isfile(cls.bagedit_path()): return 1
+        except:
+            return 0
+
+    def execute(self, context):
+        scene_path = self.scene_path()
+        args = [self.bagedit_path()]
+        if sys.platform != 'win32':  args = ['wine'] + args
+        if scene_path != '': args += [scene_path]
+        subprocess.Popen(args)
+        return {'FINISHED'}
+
 class BUGMENU_OT_SetZeroSpec(bpy.types.Operator):
     """Add material to shader editor"""
     bl_idname = "bugmenu.setzerospec"
@@ -304,12 +349,12 @@ class BUGMENU_OT_RoutesFromCurve(bpy.types.Operator):
     def execute(self, context):
         def create_plane_mesh(name, size=0.5):
             bm = bmesh.new()
-            mx = mathutils.Matrix.Scale(10, 4, (1, 0, 0)) #factor, size, axis = 10X Scale on axis X, applied to mesh.
+            mx = mathutils.Matrix.Scale(15, 4, (1, 0, 0)) #factor, size, axis = 15X Scale on axis X, applied to mesh.
             mx = mx @ mathutils.Matrix.Translation((0.5, 0, 0)) # Move pivot to edge
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=size, matrix=mx)
             mesh = bpy.data.meshes.new(name)
             bm.to_mesh(mesh)
-            bm.free()
+            bm.free()   
             return mesh   
         def create_plane_ob(mesh, name):
             ob = bpy.data.objects.new(name, mesh)
@@ -439,6 +484,7 @@ def register():
     bpy.utils.register_class(BugMenuCreate)
     bpy.utils.register_class(BUGMENU_OT_RepairCustomdata)
     bpy.utils.register_class(BUGMENU_OT_UpdateCustomdata)
+    bpy.utils.register_class(BUGMENU_OT_RunBagedit)
     bpy.utils.register_class(BUGMENU_OT_SetZeroSpec)
     bpy.utils.register_class(BUGMENU_OT_RoutesFromCurve)
     bpy.utils.register_class(BUGMENU_OT_ApplyModifier)
@@ -458,6 +504,7 @@ def unregister():
     bpy.utils.unregister_class(BugMenuCreate)
     bpy.utils.unregister_class(BUGMENU_OT_RepairCustomdata)
     bpy.utils.unregister_class(BUGMENU_OT_UpdateCustomdata)
+    bpy.utils.unregister_class(BUGMENU_OT_RunBagedit)
     bpy.utils.unregister_class(BUGMENU_OT_SetZeroSpec)
     bpy.utils.unregister_class(BUGMENU_OT_RoutesFromCurve)
     bpy.utils.unregister_class(BUGMENU_OT_ApplyModifier)
