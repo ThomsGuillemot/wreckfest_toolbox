@@ -251,7 +251,8 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
     # Add an image data block that reference the image
     ao_image: bpy.props.PointerProperty(
         name="Ambient Occlusion",
-        description="3ds Max : 1 - Ambient Color\n"
+        description="3ds Max : Ambient Color\n"
+                    "Wreckfest Slot id : 0\n"
                     "File Suffix : _aoc.tga\n",
         type=bpy.types.Image,
         update=update_images
@@ -259,7 +260,8 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
 
     base_color_image: bpy.props.PointerProperty(
         name="Base Color",
-        description="3ds Max : 2 - Diffuse Color\n"
+        description="3ds Max : Diffuse Color\n"
+                    "Wreckfest Slot id : 1\n"
                     "File Suffix : _c.tga or _c5.tga\n",
         type=bpy.types.Image,
         update=update_images
@@ -267,36 +269,41 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
 
     specular_color_image: bpy.props.PointerProperty(
         name="Specular Color",
-        description="3ds Max : 3 - Specular Color",
+        description="3ds Max : Specular Color\n"
+                    "Wreckfest Slot id : 2",
         type=bpy.types.Image,
         update=update_images
     )
 
     specular_level_image: bpy.props.PointerProperty(
         name="Specular Level",
-        description="3ds Max : 4 - Specular Level",
+        description="3ds Max : Specular Level\n"
+                    "Wreckfest Slot id : 3",
         type=bpy.types.Image,
         update=update_images
     )
 
     glossiness_image: bpy.props.PointerProperty(
         name="Glossiness",
-        description="3ds Max : 5 - Glossiness",
+        description="3ds Max : Glossiness\n"
+                    "Wreckfest Slot id : 4",
         type=bpy.types.Image,
         update=update_images
     )
 
     self_illumination_image: bpy.props.PointerProperty(
         name="Self Illumination",
-        description="3ds Max : 6 - Self-Illumination",
+        description="3ds Max : Self-Illumination\n"
+                    "Wreckfest Slot id : 5",
         type=bpy.types.Image,
         update=update_images
     )
 
     opacity_image: bpy.props.PointerProperty(
         name="Opacity",
-        description="use the alpha of base color texture\n"
-                    "3ds Max : 7 - Opacity\n"
+        description="use the alpha of base color texture"
+                    "3ds Max : Opacity\n"
+                    "Wreckfest Slot id : 6\n"
                     "File Suffix : _c.tga",
         type=bpy.types.Image,
         update=update_images
@@ -304,7 +311,8 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
 
     filter_color_image: bpy.props.PointerProperty(
         name="Filter Color",
-        description="3ds Max : 8 - Filter Color\n"
+        description="3ds Max : Filter Color\n"
+                    "Wreckfest Slot id : 7\n"
                     "File Suffix : _ao.tga",
         type=bpy.types.Image,
         update=update_images
@@ -312,7 +320,8 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
 
     bump_image: bpy.props.PointerProperty(
         name="Bump",
-        description="3ds Max : 9 - Bump\n"
+        description="3ds Max : Bump\n"
+                    "Wreckfest Slot id : 8\n"
                     "File Suffix : _n.tga",
         type=bpy.types.Image,
         update=update_images
@@ -320,8 +329,9 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
 
     mrs_image: bpy.props.PointerProperty(
         name="Metalic Roughness Specular",
-        description="Metallic = R channel | Roughness = G channel | Specular = B channel\n"
-                    "3ds Max : 10 - Reflection\n"
+        description="Metallic = R channel | Roughness = G channel | Specular = B channel"
+                    "3ds Max : Reflection\n"
+                    "Wreckfest Slot id : 9\n"
                     "File Suffix : _s.tga",
         type=bpy.types.Image,
         update=update_images
@@ -329,14 +339,16 @@ class WreckfestWrapperNode(bpy.types.ShaderNodeCustomGroup):
 
     refraction_image: bpy.props.PointerProperty(
         name="Refraction",
-        description="3ds Max : 11 - Refraction",
+        description="3ds Max : Refraction\n"
+                    "Wreckfest Slot id : 10",
         type=bpy.types.Image,
         update=update_images
     )
 
     displacement_image: bpy.props.PointerProperty(
         name="Displacement",
-        description="3ds Max : 12 - Displacement",
+        description="3ds Max : Displacement\n"
+                    "Wreckfest Slot id : 11",
         type=bpy.types.Image,
         update=update_images
     )

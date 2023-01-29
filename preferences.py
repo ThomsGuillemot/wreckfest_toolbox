@@ -99,8 +99,21 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         description="Split the edge of the mesh based on the auto smooth angle, if auto smooth is activated"
     )
 
+    bake_animation: bpy.props.BoolProperty(
+        name="Bake Animation",
+        description="Automatically add one keyframe for each frame. "
+                    "Disable this to set frames yourself or to use Wreckfest's interpolation",
+        default=True
+    )
+
+    build_bmap: bpy.props.BoolProperty(
+        name="Build Bmap",
+        description="Build .bmap textures using bimage.exe",
+        default=True
+    )
+
     build_after_export: bpy.props.BoolProperty(
-        name="Build after export",
+        name="Build After Export",
         description="Launch the Build Asset Script in background "
                     "for the newly exported .bgo3 file once the export is done",
         default=True
@@ -120,7 +133,7 @@ class WreckfestToolboxAddonPreference(bpy.types.AddonPreferences):
         """
 
         def run_in_thread(on_exit_event, popen_args_list):
-            proc = subprocess.Popen(popen_args_list, shell=True)
+            proc = subprocess.Popen(popen_args_list)
             proc.wait()
             on_exit_event()
             return
